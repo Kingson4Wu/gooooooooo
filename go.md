@@ -1,0 +1,36 @@
++ GOROOT、GOPATH、GOBIN、project目录:<https://www.jianshu.com/p/bd19a607b5a8>
++ GOBIN
+go install编译存放路径。不允许设置多个路径。可以为空。为空时则遵循“约定优于配置”原则，可执行文件放在各自GOPATH目录的bin文件夹中（前提是：package main的main函数文件不能直接放到GOPATH的src下面。
+
+#### 关于go的整体一个开发目录
+<pre>
+go_project     // go_project为GOPATH目录
+  -- bin
+     -- myApp1  // 编译生成
+     -- myApp2  // 编译生成
+     -- myApp3  // 编译生成
+  -- pkg
+  -- src
+     -- myApp1     // project1
+        -- models
+        -- controllers
+        -- others
+        -- main.go 
+     -- myApp2     // project2
+        -- models
+        -- controllers
+        -- others
+        -- main.go 
+     -- myApp3     // project3
+        -- models
+        -- controllers
+        -- others
+        -- main.go 
+</pre>
+
++ Go项目的目录结构详解:<https://www.jb51.net/article/56746.htm>
+
+#### go package
++ Go 语言的源码复用建立在包（package）基础之上。Go 语言的入口 main() 函数所在的包（package）叫 main，main 包想要引用别的代码，必须同样以包的方式进行引用，本章内容将详细讲解如何导出包的内容及如何导入其他包。
++ Go 语言的包与文件夹一一对应，所有与包相关的操作，必须依赖于工作目录（GOPATH）。
++ 关于golang中包（package）的二三事儿:<https://www.cnblogs.com/dajianshi/p/3596492.html>

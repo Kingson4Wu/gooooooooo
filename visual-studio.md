@@ -5,7 +5,7 @@
 cd $GOPATH/src
 mkdir github.com
 cd $GOPATH/src/github.com
-mkdir acroca cweill derekparker go-delve josharian karrick mdempsky pkg ramya-rao-a rogpeppe sqs uudashr
+mkdir acroca cweill derekparker go-delve josharian karrick mdempsky pkg ramya-rao-a rogpeppe sqs uudashr 
 cd $GOPATH/src/github.com/acroca
 git clone https://github.com/acroca/go-symbols.git
 cd $GOPATH/src/github.com/cweill
@@ -52,7 +52,13 @@ go install github.com/josharian/impl
 go install golang.org/x/tools/cmd/guru
 go install golang.org/x/tools/cmd/gorename
 go install golang.org/x/lint/golint
+
+go install github.com/stamblerre/gocode
+
+多重启几下
 </pre>
+
+
 
 ### 快捷键
  ＋ F9 断点
