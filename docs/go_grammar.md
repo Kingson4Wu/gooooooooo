@@ -267,3 +267,6 @@ ch := make(chan int)
 
 ---
 + byte is an alias for uint8 and is equivalent to uint8 in all ways    
++ non-constant array bound length go
+    - You can't instantiate an array like that with a value calculated at runtime. Instead use make to initialize a slice with the desired length. It would look like this;
+    left := make([]int, leftLength)

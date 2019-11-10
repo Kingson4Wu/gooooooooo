@@ -61,10 +61,11 @@ go install github.com/stamblerre/gocode
 
 
 ### 快捷键
- ＋ F9 断点
- ＋ 代码格式化可通过以下快捷方式：
++ F9 断点
++ 代码格式化可通过以下快捷方式：
 Windows Shift + Alt + F
 在Mac上Shift + Option + F
++ 条件断点（点击 add function breakpoint）
 
 ### Code Runner
 + 代码一键运行
