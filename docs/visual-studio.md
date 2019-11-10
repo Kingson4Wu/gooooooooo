@@ -65,3 +65,19 @@ go install github.com/stamblerre/gocode
  ＋ 代码格式化可通过以下快捷方式：
 Windows Shift + Alt + F
 在Mac上Shift + Option + F
+
+### Code Runner
++ 代码一键运行
+<pre>
+键盘快捷键 Ctrl+Alt+N
+快捷键 F1 调出 命令面板, 然后输入 Run Code
+在编辑区，右键选择 Run Code
+在左侧的文件管理器，右键选择 Run Code
+右上角的运行小三角按钮
+</pre>
++ 停止代码运行
+<pre>
+键盘快捷键 Ctrl+Alt+M
+快捷键 F1 调出 命令面板, 然后输入 Stop Code Run
+在Output Channel，右键选择 Stop Code Run
+</pre>
