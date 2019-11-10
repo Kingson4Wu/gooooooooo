@@ -264,4 +264,6 @@ ch := make(chan int)
 + https://www.runoob.com/go/go-concurrent.html
 + 先进后出？？？！why
 
-    
+
+---
++ byte is an alias for uint8 and is equivalent to uint8 in all ways    
