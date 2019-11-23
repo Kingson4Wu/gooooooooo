@@ -26,7 +26,7 @@ package algorithm
 func longestPalindrome(s string) int {
 	var arr [58]int
 	for _, c := range s {
-		arr[c-65] += 1
+		arr[c-65]++
 	}
 
 	count := 0
@@ -37,13 +37,13 @@ func longestPalindrome(s string) int {
 			count += c
 		} else {
 			count += c
-			count -= 1
+			count--
 			b = true
 		}
 	}
 
 	if b {
-		count += 1
+		count++
 	}
 	return count
 }

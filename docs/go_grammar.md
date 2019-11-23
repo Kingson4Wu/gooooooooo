@@ -270,3 +270,9 @@ ch := make(chan int)
 + non-constant array bound length go
     - You can't instantiate an array like that with a value calculated at runtime. Instead use make to initialize a slice with the desired length. It would look like this;
     left := make([]int, leftLength)
+
+---
+1. 字符数组和字符串互转
+sa := []rune(a) 
+s := string(sa)   
+ 
