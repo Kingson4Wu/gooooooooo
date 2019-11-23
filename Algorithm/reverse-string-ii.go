@@ -55,4 +55,32 @@ func reverseStr(s string, k int) string {
 /**
 想复杂了。。。
 1.可以通过下标直接算，奇数k需要寻找反转的下标，偶数不用
+
+func reverseStr(s string, k int) string {
+
+	r := make([]rune, len(s))
+	ss := []rune(s)
+
+	remain := len(s) % k
+	lastIndex := len(s)
+	if remain > 0 {
+		lastIndex = len(s) - remain
+	}
+
+	for i := 0; i < len(s); i++ {
+		if i%(2*k) < k {
+
+			l := k
+			if i >= lastIndex {
+				l = remain
+			}
+			index := i % k
+			r[i] = ss[i-index+l-index-1]
+		} else {
+			r[i] = ss[i]
+		}
+	}
+
+	return string(r)
+}
 */
