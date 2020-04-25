@@ -8,7 +8,7 @@ func isPowerOfTwo(n int) bool {
 
 	count := 0
 	for n > 0 {
-		if n%2 == 1 {
+		if n&1 == 1 {
 			count++
 			if count > 1 {
 				return false
