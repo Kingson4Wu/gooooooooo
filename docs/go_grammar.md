@@ -125,6 +125,24 @@ type Books struct {
 结构体指针 *Books
 </pre>
 
+构造函数
+<pre>
+//MinStack is
+type MinStack struct {
+	array  []int
+	minVal int
+}
+
+/** initialize your data structure here. */
+func Constructor() MinStack {
+
+	return MinStack{
+		array:  []int{},
+		minVal: 0,
+	}
+}
+</pre>
+
 ---
 + Go 语言切片(Slice)
     - Go 语言切片是对数组的抽象。
