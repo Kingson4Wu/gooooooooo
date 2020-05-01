@@ -165,6 +165,13 @@ numbers[1:4]
    copy(numbers1,numbers)      
 </pre>    
 
+<pre>
+在数组头前插入元素
+		result = append(result, nil)
+		copy(result[1:], result[0:])
+		result[0] = column
+</pre>
+
 + Go 语言范围(Range) :Go 语言中 range 关键字用于 for 循环中迭代数组(array)、切片(slice)、通道(channel)或集合(map)的元素。在数组和切片中它返回元素的索引和索引对应的值，在集合中返回 key-value 对。
 <pre>
 //这是我们使用range去求一个slice的和。使用数组跟这个很类似
