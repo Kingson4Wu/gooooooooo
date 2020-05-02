@@ -1,5 +1,11 @@
 package algorithm
 
+//MinStack is
+type MinStack struct {
+	array  []int
+	minVal int
+}
+
 /**
 设计一个支持 push ，pop ，top 操作，并能在常数时间内检索到最小元素的栈。
 
@@ -16,12 +22,8 @@ pop、top 和 getMin 操作总是在 非空栈 上调用。
 链接：https://leetcode-cn.com/problems/min-stack
 著作权归领扣网络所有。商业转载请联系官方授权，非商业转载请注明出处。
 */
-//MinStack is
-type MinStack struct {
-	array  []int
-	minVal int
-}
 
+//Constructor ...
 /** initialize your data structure here. */
 func Constructor() MinStack {
 
@@ -31,59 +33,63 @@ func Constructor() MinStack {
 	}
 }
 
-func (this *MinStack) Push(x int) {
+//Push ...
+func (stack *MinStack) Push(x int) {
 
-	if len(this.array) == 0 {
-		this.minVal = x
+	if len(stack.array) == 0 {
+		stack.minVal = x
 	}
 
-	this.array = append(this.array, x)
-	if x < this.minVal {
-		this.minVal = x
+	stack.array = append(stack.array, x)
+	if x < stack.minVal {
+		stack.minVal = x
 	}
 }
 
-func (this *MinStack) Pop() {
+//Pop ...
+func (stack *MinStack) Pop() {
 
-	if len(this.array) == 0 {
+	if len(stack.array) == 0 {
 		return
 	}
 
-	node := this.array[len(this.array)-1]
-	this.array = this.array[0 : len(this.array)-1]
+	node := stack.array[len(stack.array)-1]
+	stack.array = stack.array[0 : len(stack.array)-1]
 
-	if node == this.minVal {
-		if len(this.array) == 0 {
-			this.minVal = 0
+	if node == stack.minVal {
+		if len(stack.array) == 0 {
+			stack.minVal = 0
 			return
 		}
 
-		this.minVal = this.array[0]
-		for _, item := range this.array {
-			if item < this.minVal {
-				this.minVal = item
+		stack.minVal = stack.array[0]
+		for _, item := range stack.array {
+			if item < stack.minVal {
+				stack.minVal = item
 			}
 		}
 	}
 }
 
-func (this *MinStack) Top() int {
+// Top ...
+func (stack *MinStack) Top() int {
 
-	if len(this.array) == 0 {
+	if len(stack.array) == 0 {
 		return 0
 	}
 
-	node := this.array[len(this.array)-1]
+	node := stack.array[len(stack.array)-1]
 	return node
 }
 
-func (this *MinStack) GetMin() int {
+//GetMin ...
+func (stack *MinStack) GetMin() int {
 
-	if len(this.array) == 0 {
+	if len(stack.array) == 0 {
 		return 0
 	}
 
-	return this.minVal
+	return stack.minVal
 }
 
 /**
