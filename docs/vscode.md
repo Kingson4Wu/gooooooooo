@@ -58,14 +58,21 @@ go install github.com/stamblerre/gocode
 多重启几下
 </pre>
 
++ GitLens 可以增强 VSCode 内置 Git 的功能。例如 commits 搜索，历史记录和显示的代码作者身份
 
 
 ### 快捷键
++ 查看快捷键方式：prefereneces -> KeyboardShortcuts (cmd k cmd s)
 + F9 断点
 + 代码格式化可通过以下快捷方式：
 Windows Shift + Alt + F
 在Mac上Shift + Option + F
 + 条件断点（点击 add function breakpoint）
++ 同时打开多个项目，cmd＋shift＋n
++ 上一步 Ctrl + -
++ 下一步 (冲突，自定义) crtl ＋＝
++ teminal : ctrl + `
+
 
 ### Code Runner
 + 代码一键运行

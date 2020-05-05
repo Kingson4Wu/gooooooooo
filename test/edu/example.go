@@ -15,9 +15,23 @@ func main() {
 
 	//c := make(chan int)
 	c := make(chan int, 100)
+
+	/** 加了go关键字之后，顺序是相反的，不加却是正常顺序 */
 	go sum(s[:len(s)/2], c)
 	go sum(s[len(s)/2:], c)
+	//go sum([]int{4, 5, 6}, c)
 	x, y := <-c, <-c // 从通道 c 中接收
 
 	fmt.Println(x, y, x+y)
+	//x := <-c
+	//fmt.Println(x)
+
+	c <- 1
+	c <- 2
+	a, b := <-c, <-c
+	fmt.Println(a, b)
+
+	go fmt.Println(888)
+	go fmt.Println(999)
+	go fmt.Println(1000)
 }
