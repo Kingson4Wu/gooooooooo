@@ -6,6 +6,7 @@
 ---
 
 ### 做题总结
+0. 空间换时间 （最小值栈，结构体保存最小值）
 1. 递归：（1）自顶向下的递归，（2）自底向上的递归
 2. 使用数组代替hashmap的思想（利用数组的下标）, 空间换取时间
 2. 使用hashmap存， k:value, v: index (https://leetcode-cn.com/problems/two-sum/solution/liang-shu-zhi-he-by-leetcode-2/)
@@ -32,3 +33,12 @@
   - 先序（中左右），中序（左中右），后序（左右中）
   - 递归遍历和非递归遍历
   - 二叉树遍历(先序、中序、后序):<https://www.jianshu.com/p/456af5480cee e>
+
+### 图
+
+#### 有向图
++ 入度表 indegrees（key为目标顶点, value为源顶点数值）
++ 邻接表 adjacency (key为源顶点, value为目标顶点列表）
++ DFS，递归！
++ 课程表（拓扑排序：入度表BFS法 / DFS法，清晰图解）: https://leetcode-cn.com/problems/course-schedule/solution/course-schedule-tuo-bu-pai-xu-bfsdfsliang-chong-fa/
+

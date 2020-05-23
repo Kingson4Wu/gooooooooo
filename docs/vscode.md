@@ -72,6 +72,7 @@ Windows Shift + Alt + F
 + 上一步 Ctrl + -
 + 下一步 (冲突，自定义) crtl ＋＝
 + teminal : ctrl + `
++ cmd+P 找文件等操作
 
 
 ### Code Runner
