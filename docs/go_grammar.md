@@ -301,3 +301,10 @@ ch := make(chan int)
 sa := []rune(a) 
 s := string(sa)   
  
+ ---
+ + 切片中间插入元素
+ ```go
+ 		rear := append([]int{}, this.deque[index:]...)
+		this.deque = append(this.deque[:index], value)
+		this.deque = append(this.deque, rear...)
+ ```
