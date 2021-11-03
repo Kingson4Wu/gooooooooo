@@ -44,3 +44,7 @@
 + DFS，递归！
 + 课程表（拓扑排序：入度表BFS法 / DFS法，清晰图解）: https://leetcode-cn.com/problems/course-schedule/solution/course-schedule-tuo-bu-pai-xu-bfsdfsliang-chong-fa/
 
+
+----
+
++ 蓄水池抽样算法（Reservoir Sampling）:<https://www.jianshu.com/p/7a9ea6ece2af>
