@@ -29,3 +29,22 @@ https://github.com/chai2010/advanced-go-programming-book
 21. 一文读懂 Go profiling 和性能优化
 22. 读《优雅关闭的 Go Web 服务器》有感
 
+---
+https://go101.org/article/101.html
+https://gfw.go101.org/article/101.html
+https://github.com/avelino/awesome-go
+https://golang.org/doc/effective_go
+https://talks.golang.org/2013/advconc.slide
+
+
+---
+
+go web编程实战派从入门到精通
+https://gitee.com/kingson4wu/goWebActualCombat
+
+https://www.zhihu.com/question/30461290
+
+
+---
+
+https://pkg.go.dev/ !!!
