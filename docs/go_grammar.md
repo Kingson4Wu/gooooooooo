@@ -308,3 +308,16 @@ s := string(sa)
 		this.deque = append(this.deque[:index], value)
 		this.deque = append(this.deque, rear...)
  ```
+
+ ---
+
+### make vs new
++ <http://www.flysnow.org/2017/10/23/go-new-vs-make.html>
++ 二者都是内存的分配（堆上），但是make只用于slice、map以及channel的初始化（非零值）；而new用于类型的内存分配，并且内存置为零。所以在我们编写程序的时候，就可以根据自己的需要很好的选择了。
++ make返回的还是这三个引用类型本身；而new返回的是指向类型的指针。
++ new这个内置函数，可以给我们分配一块内存让我们使用，但是现实的编码中，它是不常用的。我们通常都是采用短语句声明以及结构体的字面量达到我们的目的; make函数是无可替代的，我们在使用slice、map以及channel的时候，还是要使用make进行初始化，然后才才可以对他们进行操作.
+
+---
+
+### Go语言圣经（中文版）
++ <https://books.studygolang.com/gopl-zh/>
