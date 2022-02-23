@@ -7,7 +7,7 @@ type MaxQueue struct {
 }
 
 //Constructor is ...
-func Constructor() MaxQueue {
+func Constructor1() MaxQueue {
 	return MaxQueue{
 		queue: []int{},
 		deque: []int{},

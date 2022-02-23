@@ -1,5 +1,19 @@
 + 关于visual studio code无法安装golang插件的解决办法:<https://blog.csdn.net/dmt742055597/article/details/85865186>
 
++ VSCode Remote SSH
+Remote SSH 只支持 Linux 作为服务器，且必须是 64 位版本。
+
+在进行嵌入式Linux开发的时候，为了方便，通常在Windows上使用代码编辑器编辑代码，交叉编译工具在Linux虚拟机或者服务器上，在开发期间需要不停的进行如下的循环操作：
+
+编辑好代码，使用基于SSH的SCP将文件上传到服务器；
+使用SSH远程终端，在服务器上编译出可执行文件；
+编译完成后使用基于SSH的SCP将文件传回到本地；
+
+https://cloud.tencent.com/developer/article/1726694
+
+
++ VSCode 开发 Go 程序也可以和 GoLand 一样强大:<https://mp.weixin.qq.com/s/J01LY7s6xMB8Lk10sxTFhg>
+
 <pre>
 创建github.com插件目录及下载插件
 cd $GOPATH/src
