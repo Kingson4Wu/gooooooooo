@@ -8,3 +8,9 @@ bin: 编译后生成的可执行文件, 为了方便，可以把此目录加入�
 </pre>
 
 go mod init github.com/kingson4wu/gooooooooo
+
+---
+
+go mod tidy
+
+go mod vendor

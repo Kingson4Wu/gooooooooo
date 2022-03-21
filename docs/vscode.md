@@ -104,3 +104,7 @@ Windows Shift + Alt + F
 快捷键 F1 调出 命令面板, 然后输入 Stop Code Run
 在Output Channel，右键选择 Stop Code Run
 </pre>
+
++ 注释代码
+1、单行注释，使用"Ctrl + /"，或者先按"CTRL+K"，再按"CTRL+U"；
+2、块注释，使用"Alt+Shift+A"
