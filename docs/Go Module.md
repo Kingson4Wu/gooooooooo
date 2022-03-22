@@ -14,3 +14,25 @@ go mod init github.com/kingson4wu/gooooooooo
 go mod tidy
 
 go mod vendor
+
+---
+
++ Go mod 七宗罪：<https://jishuin.proginn.com/p/763bfbd56b9d>
+
+
+---
+
+### go.sum
++ <https://www.topgoer.cn/docs/gozhuanjia/chapter123.10-module-go-sum>
+
++ go.sum 是使用 Go Modules 时自动生成的，是否需要把它放到 .gitignore 文件里排除？
+
+官方的建议是要将 go.sum 和 go.mod 两个文件一起提交到代码库中，这样才能保证项目依赖包版本的一致，同时保证 Build 的一致性。
+
+————————————————
+原文作者：Summer
+转自链接：https://learnku.com/go/t/39186
+版权声明：著作权归作者所有。商业转载请联系作者获得授权，非商业转载请保留以上作者信息和原文链接。
+
+https://github.com/golang/go/wiki/Modules#should-i-commit-my-gosum-file-as-well-as-my-gomod-file
+
