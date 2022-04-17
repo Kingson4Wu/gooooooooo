@@ -108,3 +108,16 @@ Windows Shift + Alt + F
 + 注释代码
 1、单行注释，使用"Ctrl + /"，或者先按"CTRL+K"，再按"CTRL+U"；
 2、块注释，使用"Alt+Shift+A"
+
+### Plugins
++ Bracket Pair Colorizer / Bracket Pair Colorizer 2
++ Highlight Matching Tag这也是一个找对象的插件，找的是标签的对象
++ Material Theme Icons /VSCode Great Icons
++ Code Spell Checker
++ Git History / GitLens — Git supercharged
++ Local History
++ Partial Diff
++ Project Manager
++ json2ts
++ Settings Sync
+
