@@ -181,7 +181,7 @@ numbers[1:4]
         sum += num
     }
     fmt.Println("sum:", sum)
-    //在数组上使用range将传入index和值两个变量。上面那个例子我们不需要使用该元素的序号，所以我们使用空白符"_"省略了。有时侯我们确实需要知道它的索引。
+    //在数组上使用range将传入index和值两个变量。上面那个例子我们不需要使用该元素的序号，所以我们使用空白符"_"省略了。有时候我们确实需要知道它的索引。
     for i, num := range nums {
         if num == 3 {
             fmt.Println("index:", i)
