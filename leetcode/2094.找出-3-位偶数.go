@@ -49,19 +49,46 @@ package leetcode
 
 */
 
+func Exexute(digits []int) []int {
+	return findEvenNumbers(digits)
+}
+
 // @lc code=start
 func findEvenNumbers(digits []int) []int {
 
+	digitsArr := [10]int{}
+	for _, digit := range digits {
+		digitsArr[digit]++
+	}
+
 	result := []int{}
-	for i := 100; i < 998; i++ {
+	for i := 100; i <= 998; i++ {
 		if i%2 != 0 {
 			continue
 		}
+		hitMap := make(map[int]int)
+		ss := i
+		for {
+			s := ss % 10
+			ss = ss / 10
+			hitMap[s]++
+			if ss == 0 {
+				break
+			}
+		}
+		hit := true
+		for k, v := range hitMap {
+			if v > digitsArr[k] {
+				hit = false
+				break
+			}
+		}
+		if hit {
+			result = append(result, i)
+		}
 
 	}
-
 	return result
-
 }
 
 // @lc code=end
