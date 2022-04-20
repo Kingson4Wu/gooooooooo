@@ -49,9 +49,14 @@ package leetcode
 
 */
 
+/**
+digits := []int{2, 1, 3, 0}
+	leetcode.Exexute(digits)
+*/
+/**
 func Exexute(digits []int) []int {
 	return findEvenNumbers(digits)
-}
+}*/
 
 // @lc code=start
 func findEvenNumbers(digits []int) []int {

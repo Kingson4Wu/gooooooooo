@@ -6,6 +6,7 @@ import (
 
 func main() {
 
-	digits := []int{2, 1, 3, 0}
-	leetcode.Exexute(digits)
+	nums1 := []int{1, 2}
+	nums2 := []int{3, 4}
+	leetcode.Exexute(nums1, nums2)
 }
