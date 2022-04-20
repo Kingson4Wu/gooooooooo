@@ -28,3 +28,8 @@ kill 4543 && nohup ./singo > nohup.log 2>&1 &
 singo是二进制文件名
 使用&&同时执行2条命令，避免服务中断
 kill -9 4543 && nohup ./singo > nohup.log 2>&1 &
+
+
+---
+
++ 如何在 Linux & MacOS 上优雅的发布 Go 程序:<https://segmentfault.com/a/1190000019595886>
