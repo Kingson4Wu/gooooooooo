@@ -87,6 +87,7 @@ Windows Shift + Alt + F
 + 下一步 (冲突，自定义) crtl ＋＝
 + teminal : ctrl + `
 + cmd+P 找文件等操作
++ 调用链：Option + Shift + H
 
 
 ### Code Runner

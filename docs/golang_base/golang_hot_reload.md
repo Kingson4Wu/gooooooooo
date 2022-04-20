@@ -4,3 +4,6 @@
 
 ### air
 + go install github.com/cosmtrek/air@latest
+
+### gowatch
++ https://github.com/silenceper/gowatch
