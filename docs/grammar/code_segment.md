@@ -37,6 +37,14 @@ files := "E:\\data\\test.txt"
 sa := []rune(a) 
 s := string(sa)
 ```   
+### 字母字符
+```go
+func toChar(i int) rune {
+    return rune('A' - 1 + i)
+}
+```
+### 基本数据类型的字符串表示之间的转换
++ `strconv.Itoa(23)`
 
 ### golang中判断字符串是否为空的方法
 ```go

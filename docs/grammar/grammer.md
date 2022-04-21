@@ -82,6 +82,15 @@ if str == "" {
             }
         }()
     ```      
++ error、panic 和 recover、defer
+    - 使用 defer 语句进行延迟调用，用来关闭或释放资源。
+    - 使用 panic 和 recover 来抛出错误和恢复。
+    - 使用 panic 一般有两种情况：
+        1. 程序遇到无法执行的错误时，主动调用 panic 结束运行；
+        2. 在调试程序时，主动调用 panic 结束运行，根据抛出的错误信息来定位问题。
+    - 为了程序的健壮性，可以使用 recover 捕获错误，恢复程序运行。
+    - recover 恢复，recover 只能放到 defer 函数里面，不能放到子函数。
+
 + golang 中 sync.Mutex 和 sync.RWMutex:<https://www.jianshu.com/p/679041bdaa39>
 + 在WaitGroup
 在WaitGroup 对象实现中，内部有一个计数器，最初从0开始，它有三个方法：
