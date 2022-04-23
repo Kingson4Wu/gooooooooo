@@ -1,1 +1,0 @@
-+ Go 每日一库之 wire:<https://darjun.github.io/2020/03/02/godailylib/wire/>

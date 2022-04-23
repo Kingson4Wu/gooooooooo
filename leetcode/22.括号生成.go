@@ -10,3 +10,5 @@ func generateParenthesis(n int) []string {
 }
 // @lc code=end
 
+fun getParenthesis(String str,int left, int right) {
+}
