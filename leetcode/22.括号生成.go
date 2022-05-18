@@ -1,3 +1,5 @@
+package leetcode
+
 /*
  * @lc app=leetcode.cn id=22 lang=golang
  *
@@ -6,9 +8,10 @@
 
 // @lc code=start
 func generateParenthesis(n int) []string {
-
+	return []string{}
 }
+
 // @lc code=end
 
-fun getParenthesis(String str,int left, int right) {
-}
+/* func getParenthesis(String str,int left, int right) {
+} */
