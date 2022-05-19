@@ -17,22 +17,22 @@ func QuickSort(nums []int, start, end int) {
 func partition(nums []int, start, end int) int {
 	temp := nums[start]
 	low := start
-	height := end
+	high := end
 
-	for low < height {
-		for low < height && temp < nums[height] {
-			height--
+	for low < high {
+		for low < high && temp <= nums[high] {
+			high--
 		}
-		if low < height {
-			nums[low] = nums[height]
+		if low < high {
+			nums[low] = nums[high]
 		}
 
-		for low < height && temp > nums[low] {
+		for low < high && temp > nums[low] {
 			low++
 		}
 
-		if low < height {
-			nums[height] = nums[low]
+		if low < high {
+			nums[high] = nums[low]
 		}
 	}
 
