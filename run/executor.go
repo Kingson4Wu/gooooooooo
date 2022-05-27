@@ -3,7 +3,7 @@ package main
 import (
 	//"github.com/kingson4wu/gooooooooo/leetcode"
 	//"github.com/kingson4wu/gooooooooo/nowcoder"
-	"github.com/kingson4wu/gooooooooo/sort"
+	"github.com/kingson4wu/gooooooooo/nowcoder"
 )
 
 type ListNode struct {
@@ -19,12 +19,17 @@ func main() {
 	//nowcoder.AdjustV2(len(nums1)-1, nums1)
 	//nowcoder.GetLeastNumbers_Solution(nums1, 4)
 
-	nums1 := []int{1}
+	nums1 := []int{364, 637, 341, 406, 747, 995, 234, 971}
+	result :=
+		nowcoder.InversePairs(nums1)
+	println(result)
+
+	/**nums1 := []int{1}
 	result := sort.QuickSortTopk_1(nums1, 0)
 
 	for _, v := range result {
 		println(v)
-	}
+	}*/
 
 }
 

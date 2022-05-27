@@ -47,6 +47,11 @@ nowcoder/NC30 缺失的第一个正整数.go
 + DFS，递归！
 + 课程表（拓扑排序：入度表BFS法 / DFS法，清晰图解）: https://leetcode-cn.com/problems/course-schedule/solution/course-schedule-tuo-bu-pai-xu-bfsdfsliang-chong-fa/
 
+##### DFS
++ TODO
+##### BFS
++ TODO
+
 ### 堆
 + 堆的结构可以分为大顶堆和小顶堆，是一个完全二叉树
 + 底层数组结构

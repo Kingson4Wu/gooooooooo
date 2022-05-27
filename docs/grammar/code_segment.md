@@ -78,6 +78,19 @@ sort.Sort(ByKey(intermediate))
 
 ```
 
++ 基本类型
+使用以如函数实现基本类型
+
+`sort.Ints`
+`sort.Float64s`
+`sort.Strings`
+
+```go
+s := []int{4, 2, 3, 1}
+sort.Ints(s)
+fmt.Println(s) // [1 2 3 4]
+```
+
 ## HTTP
 ### Go 语言下载文件 http.Get() 和 io.Copy()
 + <https://www.twle.cn/t/384>
