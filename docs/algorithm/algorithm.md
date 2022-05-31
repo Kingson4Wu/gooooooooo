@@ -59,8 +59,27 @@ nowcoder/NC30 缺失的第一个正整数.go
     }
 
 ```
++ 后序遍历同样可以使用递归（和中序递归一样处理）
 
-
++ nowcoder/BM31 对称的二叉树.go
+还是用递归！！！
+```java
+public class Solution {
+    boolean recursion(TreeNode root1, TreeNode root2){
+        //可以两个都为空
+        if(root1 == null && root2 == null)
+            return true;
+        //只有一个为空或者节点值不同，必定不对称
+        if(root1 == null || root2 == null || root1.val != root2.val)
+            return false;
+        //每层对应的节点进入递归比较
+        return recursion(root1.left, root2.right) && recursion(root1.right, root2.left);
+    }
+    boolean isSymmetrical(TreeNode pRoot) {
+        return recursion(pRoot, pRoot);
+    }
+}
+```
 
 ### 图
 
