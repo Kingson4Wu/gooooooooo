@@ -14,13 +14,13 @@ type TreeNode struct {
  * @return int整型一维数组
  */
 
-var result = []int{}
+var gggggggggggg = []int{}
 
 func preorderTraversal(root *TreeNode) []int {
 	// write code here
 
 	call(root)
-	return result
+	return gggggggggggg
 }
 
 func call(root *TreeNode) {
@@ -29,7 +29,7 @@ func call(root *TreeNode) {
 		return
 	}
 
-	result = append(result, root.Val)
+	gggggggggggg = append(gggggggggggg, root.Val)
 	call(root.Left)
 	call(root.Right)
 }

@@ -1,13 +1,13 @@
 package nowcoder
 
-var result1 = []int{}
+var sffdfgfgdgdsds = []int{}
 
 func postorderTraversal(root *TreeNode) []int {
 	// write code here
 
 	inorder(root)
 
-	return result1
+	return sffdfgfgdgdsds
 }
 
 func inorder(root *TreeNode) {
@@ -17,7 +17,7 @@ func inorder(root *TreeNode) {
 	}
 	inorder(root.Left)
 	inorder(root.Right)
-	result1 = append(result1, root.Val)
+	sffdfgfgdgdsds = append(sffdfgfgdgdsds, root.Val)
 }
 
 /**
