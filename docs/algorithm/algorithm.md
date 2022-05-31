@@ -39,6 +39,29 @@ nowcoder/NC30 缺失的第一个正整数.go
   - 递归遍历和非递归遍历
   - 二叉树遍历(先序、中序、后序):<https://www.jianshu.com/p/456af5480cee e>
 
++ 写代码前，先画图整理好思路！！！！
++ 前序遍历使用递归即可
++ 中序遍历使用栈（有递归解法....）
+`nowcoder/BM24 二叉树的中序遍历.go`
+递归真的好难理解！！！
+
+```go
+   public void inorder(List<Integer> list, TreeNode root){
+        //遇到空节点则返回
+        if(root == null)
+            return;
+        //先去左子树
+        inorder(list, root.left);
+        //再访问根节点
+        list.add(root.val);
+        //最后去右子树
+        inorder(list, root.right);
+    }
+
+```
+
+
+
 ### 图
 
 #### 有向图

@@ -102,3 +102,33 @@ fmt.Println(s) // [1 2 3 4]
 
 + Go 语言切片是对数组的抽象。make
 
+---
+
+## 栈 和 队列
++ [golang 队列和栈的实现](https://www.jianshu.com/p/43ef9a4c458b)
+
+```go
+// 初始化
+var queue []int
+var stack []int
+
+// 入队 入栈
+queue = append(queue, 1)
+stack = append(stack, 1)
+
+// 出队 出栈
+queue = queue[1: len(queue)]
+stack = stack[0: len(queue)]
+```
+
+```go
+	stack := []int{}
+
+	// 入栈
+	stack = append(stack, 1)
+
+	// 出栈
+	value := stack[len(stack)-1]
+	stack = stack[0 : len(stack)-1]
+
+```

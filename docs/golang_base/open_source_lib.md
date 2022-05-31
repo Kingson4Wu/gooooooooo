@@ -22,3 +22,6 @@
 `dump.P(vars…)` 使用简单，直接调用即可
 
 + testing是 Go 语言标准库自带的测试库
+
++ github.com/golang/mock/gomock
++ github.com/DATA-DOG/go-sqlmock 结合 gorm 来进行 mock
