@@ -36,3 +36,7 @@ go mod vendor
 
 https://github.com/golang/go/wiki/Modules#should-i-commit-my-gosum-file-as-well-as-my-gomod-file
 
+---
+
++ Go语言重新开始，Go Modules的前世今生与基本使用:<https://mp.weixin.qq.com/s/0FU8YrPhb2ezc5Is7wVpNQ>
+

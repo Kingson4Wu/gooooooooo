@@ -1,27 +1,27 @@
 package nowcoder
 
-var maxDepthV = 0
-
 func maxDepth(root *TreeNode) int {
 	// write code here
 
-	search(root, 0)
+	maxDepthV := 0
+
+	search(root, 0, &maxDepthV)
 	return maxDepthV
 }
 
-func search(root *TreeNode, depth int) {
+func search(root *TreeNode, depth int, maxDepthV *int) {
 
 	if root == nil {
 
-		if depth > maxDepthV {
-			maxDepthV = depth
+		if depth > *maxDepthV {
+			*maxDepthV = depth
 		}
 		return
 	}
 
 	depth++
-	search(root.Left, depth)
-	search(root.Right, depth)
+	search(root.Left, depth, maxDepthV)
+	search(root.Right, depth, maxDepthV)
 
 }
 
