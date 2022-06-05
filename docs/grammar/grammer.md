@@ -60,6 +60,7 @@ if str == "" {
     - golang与java间的json-rpc跨语言调用:<https://www.cnblogs.com/geomantic/p/4751859.html>
 + go语言之行--golang核武器goroutine调度原理、channel详解 :<https://www.cnblogs.com/wdliu/p/9272220.html>   
     - https://www.runoob.com/w3cnote/go-channel-intro.html
+    - Channel可以作为一个先入先出(FIFO)的队列，接收的数据和发送的数据的顺序是一致的。
 + 深入理解 Go 语言 defer:<https://zhuanlan.zhihu.com/p/63354092>
 + Go的异常处理 defer, panic, recover:<https://www.cnblogs.com/ghj1976/archive/2013/02/11/2910114.html>
 + golang error与panic处理:<https://www.jianshu.com/p/aee7e1bc4841>
