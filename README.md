@@ -21,3 +21,20 @@ https://blog.csdn.net/jmilk/article/details/107285314
 https://juejin.cn/post/6944649692319842340
 
 ---
+
+
+Go 之所以这么受欢迎，我认为与它本身所具备的那些优秀的特性有很大关系，比如：
+
+并发与协程（Goroutine）
+
+消息通信（Channel）
+
+丰富的内置数据类型（map、error、chan等）
+
+函数多返回值
+
+Defer延迟处理机制
+
+简单的网络编程
+
+高度一致的代码规范和风格等等。

@@ -67,6 +67,7 @@ hook思路：https://github.com/brahma-adshonor/gohook
     - 在介绍 Go+ 编译器实现原理（请移步 bilibili 搜索 "Go+ 公开课 · 第1期｜Go+ v1.x 的设计与实现" 进行查看）的时候，我提到过 github.com/goplus/gox 这个项目，它是用来辅助生成 Go AST 的模块。在 C AST 转为 Go AST 中，我们也会借助它来大幅减少开发工作量。
     - 生成了 Go AST，剩下来的工作就和我们在 Go+ 一样了，通过 Go AST 调用 go/format 这个标准库来生成 Go 源文件，最后用 Go 编译器编译它。
 
++ Golang 最细节篇之 — Reader 和 ReaderAt 的区别:<https://mp.weixin.qq.com/s/BcSFBpHUbb_mLIaSYfoqrw> TODO
 
 ---
 

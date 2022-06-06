@@ -103,3 +103,7 @@
 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
 
 Go 各版本回顾:<https://studygolang.com/articles/28435>
+
+
+--- 
++ Go 1.18新特性解读（万字长文）:<https://mp.weixin.qq.com/s/8CyoGLuepuCI4Hj1Ev0GcQ>

@@ -502,3 +502,13 @@ Go 1.13 将 xerrors 的部分功能（不是全部）整合进了标准库。它
 ---
 
 + 万字长文：Go error 处理最佳实践:<https://mp.weixin.qq.com/s/XdRe_yOiFGI8NiR9eWLEoQ>
+
+
+---
+
+
++ 使用 github.com/pkg/errors ，我们所有的代码都不需要进行修改，只需要将import地方进行对应的修改即可。
+
+在main.go中使用fmt.Printf("%+v", err) 就能除了打印error的信息，也能将堆栈打印出来了。
+
+

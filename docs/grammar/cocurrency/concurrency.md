@@ -566,4 +566,39 @@ Context：多层级groutine之间的信号传播（包括元数据传播，取�
 
     可能最重要的方法是将锁保持在最低限度，如果你在在考虑原子等替代方案，请务必在投入生产之前对其进行广泛的测试和试验。
 
-    
+---
+
++ Golang channel 三大坑，你踩过了嘛？:<https://mp.weixin.qq.com/s/chQAircuP6_dQUBHbk6ESw> TODO!!
+    - 死锁
+        + 2.1 只有生产者，没有消费者，或者反过来
+        + 2.2 生产者和消费者出现在同一个 goroutine 中
+        + 2.3 buffered channel 已满，且出现上述情况
+    - 内存泄漏
+        + 生产者/消费者 所在的 goroutine 已经退出，而其对应的 消费者/生产者 所在的 goroutine 会永远阻塞住，直到进程退出
+        + 生产者阻塞导致泄漏
+        + 消费者阻塞导致泄漏
+        + 如何预防内存泄漏？
+            - 创建 goroutine 时就要想清楚它什么时候被回收    
+                1. 当 goroutine 退出时，需要考虑它使用的 channel 有没有可能阻塞对应的生产者、消费者的 goroutine
+                2. 尽量使用 buffered channel使用 buffered channel 能减少阻塞发生、即使疏忽了一些极端情况，也能降低 goroutine 泄漏的概率
+    -  panic
+        + 向已经 close 掉的 channel 继续发送数据
+        + 多次 close 同一个 channe
+    - 如何优雅地 close channel
+        + 结论：除非必须关闭 chan，否则不要主动关闭。关闭 chan 最优雅的方式，就是不要关闭 chan~ 
+        + chan 关闭的原则:
+            1. Don't close a channel from the receiver side 不要在消费者端关闭 chan
+            2. Don't close a channel if the channel has multiple concurrent senders  有多个并发写的生产者时也别关               
+
+
+---
+
++ 从 bug 中学习：六大开源项目告诉你 go 并发编程的那些坑:<https://mp.weixin.qq.com/s/FDV77dO9nwtPltmx5cB7Lw>  TODO!!
+    - unbuffered channel 由于 receiver 退出导致 sender 侧 block
+        + 这个 bug 的修复方式也是非常的简单，把 unbuffered channel 修改成 buffered channel。
+    - WaitGroup 误用导致阻塞
+    - context 误用导致资源泄漏
+    - 多个 goroutine 同时读写共享变量导致的 bug
+    - channel 被关闭多次引发的 bug
+    - timer 误用产生的 bug
+    - 读写锁误用引发的 bug    
