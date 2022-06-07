@@ -76,3 +76,7 @@ hook思路：https://github.com/brahma-adshonor/gohook
 + 调度器、并发、channel
 + 内存分配
 + pprof使用: pprof分析，竞态分析，逃逸分析，这些基础的手段是必须要学会的
+
+进阶要去学习怎么定位 Go 在线上系统的问题，成为一个 Go 的高级工程师。这部分需要大家了解一些 Go 的底层知识，学习基于 goroutine 和 channel 的各种并发编程模式，以及常用的工具链：比如 pprof 怎么用，怎么用 --base 去找内存泄露，出了性能问题怎么做优化等等。要达到的目标是：线上的 Go 系统出了问题，能够通过自己的知识储备快速定位。Go 的底层知识现在国内比 java 圈还卷，文章很泛滥，可以随意搜搜，择优阅读。
+
+https://mp.weixin.qq.com/s/2wXNMd9fD3q5v9QNEUWa1A

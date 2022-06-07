@@ -5,6 +5,8 @@
 ---
 
 + 有哪有优秀的golang库？ - Go语言入门到精通 的回答 - 知乎:<https://www.zhihu.com/answer/2481047615> !!!! TODO
++ 有哪些值得学习的 Go 语言开源项目？:<https://www.zhihu.com/question/20801814>
++ https://github.com/avelino/awesome-go
 
 ---
 
