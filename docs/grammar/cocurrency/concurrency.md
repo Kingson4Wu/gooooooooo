@@ -602,3 +602,147 @@ Context：多层级groutine之间的信号传播（包括元数据传播，取�
     - channel 被关闭多次引发的 bug
     - timer 误用产生的 bug
     - 读写锁误用引发的 bug    
+
+
+----
+
+
++ Golang 开发需要协程池吗？:<https://www.zhihu.com/question/302981392>
+
+显然不需要，goroutine的初衷就是轻量级的线程，为的就是让你随用随起，结果你又搞个池子来，这不是脱裤子放屁么？你需要的是限制并发，而协程池是一种违背了初衷的方法。池化要解决的问题一个是频繁创建的开销，另一个是在等待时占用的资源。goroutine 和普通线程相比，创建和调度都不需要进入内核，也就是创建的开销已经解决了。同时相比系统线程，内存占用也是轻量的。所以池化技术要解决的问题goroutine 都不存在，为什么要创建 goroutine pool 呢？如果因为 goroutine 持有资源而要去创建goroutine pool，那只能说明代码的耦合度较高，应该为这类资源创建一个goroutine-safe的对象池，而不是把goroutine本身池化。
+
+作者：Angry Bugs
+链接：https://www.zhihu.com/question/302981392/answer/561075901
+来源：知乎
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+
+---
+协程池
+
+绝大部分应用场景，go是不需要协程池的。当然，协程池还是有一些自己的优势：
+可以限制goroutine数量，避免无限制的增长。
+减少栈扩容的次数。
+频繁创建goroutine的场景下，资源复用，节省内存。（需要一定规模。一般场景下，效果不太明显。）
+
+go对goroutine有一定的复用能力。所以要根据场景选择是否使用协程池，不恰当的场景不仅得不到收益，反而增加系统复杂性。
+
+---
+
+只要控制gorountine数量的问题，我觉得就像sync.Pool一样，Pool中的数据在每次GC的时候都会清掉，所以不能用在一些需要保持连接的场景下，但是存在即合理，sync.Pool就是个临时对象池，可以减轻程序频繁创建对象的消耗，以减轻垃圾回收的压力，gorountine是不是也是一样呢，虽然起一个协程的开销很小，但是在极限情况下，合理复用总是没错的，这事儿还是得结合具体场景来选择，简单限制数量，开发起来快速，彻底池化，可以压榨极限性能。
+
+作者：silsuer
+链接：https://www.zhihu.com/question/302981392/answer/549889122
+来源：知乎
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+----
+
+golang协程池模型思考： <https://www.jianshu.com/p/f79424050d6a>
+
+总结：
+
+1、如果程序并发创建协程数据量很大，每个协程处理任务的事件较长，需要维持协程池，毕竟服务器的资源是有上限的，到达一定数量之后，会导致协程数过多而产生CPU负载较高的情况。
+
+2、从自己压测数据看，创建协程的过程确实比较小的系统开销，通过上述压测数据来看也只有11us的差距。
+
+作者：GoSnail
+链接：https://www.jianshu.com/p/f79424050d6a
+来源：简书
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+
+---
+
+channel池化实例，goroutine利用channel，阻塞等待
+
++ goroutine复用easy版，尽可能减少不必要的新协程：<https://blog.csdn.net/weixin_45566022/article/details/107900263>
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+// 定义方法接口
+type Pool interface {
+	Dispatch(task func() int) error
+}
+
+// 定义协程池结构体
+type pool struct {
+	// 待执行任务chan
+	work chan func() int
+	// 用于限制最大协程数
+	numControl chan struct{}
+	// 用于停止协程
+	stopChan chan struct{}
+}
+
+// 实例化pool,设置最大协程数size（也可以根据runtime.NumCPU()来进行限制)
+func NewPool(size int) Pool {
+	return &pool{
+		work:       make(chan func() int),
+		numControl: make(chan struct{}, size),
+		stopChan:   make(chan struct{}, size),
+	}
+}
+
+// 任务调度，当work和numControl都处于阻塞时，阻塞直到有一方解除阻塞
+func (p *pool) Dispatch(task func() int) error {
+	select {
+	// 第一次启动阻塞，worker运行后此chan停止阻塞，
+	case p.work <- task:
+	case p.numControl <- struct{}{}: // 第一次运行时执行此处，且当任务触发，同时其他协程阻塞或未结束时，开启新的协程
+		go p.Worker(task)
+	}
+	return nil
+}
+
+func (p *pool) Worker(task func() int) {
+	defer func() { <-p.numControl }()
+firstFor:
+	for {
+		// task执行
+		i := task()
+		if i == 0 {
+			p.stopChan <- struct{}{}
+		}
+		// task执行完毕阻塞等待work chan
+		select {
+		case task = <-p.work:
+		case <-p.stopChan: // 根据条件通知结束协程
+			fmt.Println("stop！！！！")
+			break firstFor
+		}
+	}
+}
+
+func (p *pool) StopWorker() {
+	p.stopChan <- struct{}{}
+}
+
+func main() {
+	// 初识化pool
+	p := NewPool(5)
+	for i := 0; ; i++ {
+		time.Sleep(time.Second)
+		// 当程序第一次运行时,并未开启协程运行Worker,由于work chan无缓冲，且无此chan的消费者，因此p.work <- task处于阻塞状态，
+		//继而先执行p.numControl <- struct{}{}，开启协程运行Worker
+		p.Dispatch(func() int {
+			fmt.Println(i)
+			return i % 7
+		})
+	}
+
+}
+
+```
+
+---
+
+
+
+---

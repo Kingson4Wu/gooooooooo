@@ -132,3 +132,31 @@ stack = stack[0: len(queue)]
 	stack = stack[0 : len(stack)-1]
 
 ```
+
+## set
+```go
+
+type Set map[string]struct{}
+
+func (s Set) Has(key string) bool {
+ _, ok := s[key]
+ return ok
+}
+
+func (s Set) Add(key string) {
+ s[key] = struct{}{}
+}
+
+func (s Set) Delete(key string) {
+ delete(s, key)
+}
+
+func main() {
+ s := make(Set)
+ s.Add("foo")
+ s.Add("bar")
+ fmt.Println(s.Has("foo"))
+ fmt.Println(s.Has("bar"))
+}
+```
+如果想使用 Set 的完整功能，如初始化（通过切片构建一个 Set）、Add、Del、Clear、Contains 等操作，可以使用开源库 golang-set。

@@ -75,4 +75,4 @@ hook思路：https://github.com/brahma-adshonor/gohook
 + gc
 + 调度器、并发、channel
 + 内存分配
-+ pprof使用
++ pprof使用: pprof分析，竞态分析，逃逸分析，这些基础的手段是必须要学会的
