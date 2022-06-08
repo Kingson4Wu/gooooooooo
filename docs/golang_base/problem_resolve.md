@@ -8,6 +8,7 @@ https://www.cxymm.net/article/qq_29719097/102406092
  ---
 
 + 内存泄漏的定位与排查：Heap Profiling 原理解析:<https://mp.weixin.qq.com/s/acp0VqDI3SurOPp-xlHLmw>
++ golang：快来抓住内存泄漏的“真凶”！:<https://mp.weixin.qq.com/s/HosxXlz9e1jOmIY60RRkaQ>
  
 <pre>
  Go runtime 内置了方便的 profiler，heap 是其中一种类型。我们可以通过如下方式开启一个 debug 端口：
