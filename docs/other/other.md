@@ -69,6 +69,10 @@ hook思路：https://github.com/brahma-adshonor/gohook
 
 + Golang 最细节篇之 — Reader 和 ReaderAt 的区别:<https://mp.weixin.qq.com/s/BcSFBpHUbb_mLIaSYfoqrw> TODO
 
++ 从源代码角度看 epoll 在 Go 中的使用（一）：<https://mp.weixin.qq.com/s?__biz=MzAxMTA4Njc0OQ==&mid=2651438660&idx=2&sn=9eefcfdc79e1ed307515b58badb1d1cd&chksm=80bb60b6b7cce9a03d06a4aa307a203093b5ccf604cd7078a49cf3aef6c0a6be2cb3cc034084&mpshare=1&scene=1&srcid=&sharer_sharetime=1582693740247&sharer_shareid=dcfe0eae58d1da3d4cc1d60a98c3905c#rd>
+
+
+
 ---
 
 ### golang面试
@@ -85,3 +89,33 @@ https://mp.weixin.qq.com/s/2wXNMd9fD3q5v9QNEUWa1A
 + Go语言面试问得最多的面试题：<https://zhuanlan.zhihu.com/p/360306642>
 
 https://github.com/chrislusf/seaweedfs !!!
+https://github.com/panjf2000/ants !!!
+
+
+<pre>
+TinyRPC
+
+TinyRPC 是基于Go语言标准库 net/rpc 扩展的远程过程调用框架，它具有以下特性：
+* 基于TCP传输层协议
+* 支持多种压缩格式：gzip、snappy、zlib；
+* 基于二进制的 Protocol Buffer 序列化协议：具有协议编码小及高扩展性和跨平台性；
+* 支持生成工具：TinyRPC提供的 protoc-gen-tinyrpc 插件可以帮助开发者快速定义自己的服务；
+TinyRPC 的源代码仅有一千行左右，通过学习 TinyRPC ，开发者可以得到以下收获：
+* 代码简洁规范
+* 涵盖大多数 Go 语言基础用法和高级特性
+* 单元测试编写技巧
+* TCP流中处理数据包的技巧
+* RPC框架的设计理念
+TinyBalancer
+
+TinyBalancer 是基于Go语言标准库 net/http/httputil 扩展的反向代理负载均衡器，它支持以下特性：
+* 支持http以及https协议
+* 支持七种负载均衡算法，分别是：round-robin、random、power of 2 random choice、consistent hash、consistent hash with bounded、ip-hash、least-load。
+* 支持心跳检测，故障恢复
+TinyBalancer 的源代码仅有一千行左右，通过学习 TinyBalancer ，开发者可以得到以下收获：
+* 深入理解负载均衡算法
+* 代码简洁规范
+* 用Go语言设计反向代理的技巧
+* 单元测试编写技巧
+* 工厂设计模式在go语言中的应用
+</pre>

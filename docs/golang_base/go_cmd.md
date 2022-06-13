@@ -36,3 +36,12 @@ go run gofiles... 编译列出的文件，并生成可执行文件然后执行�
 这里是该命令的官方文档：https://pkg.go.dev/cmd/vet。
 
 
++ 使用 -gcflags=-m 参数看一下编译器做了哪些优化：
+
+go build -gcflags=-m  -o maxvar maxvar.go
+```shell
+# command-line-arguments
+./maxconst.go:7:6: can inline max
+./maxconst.go:17:8: inlining call to max
+```
+

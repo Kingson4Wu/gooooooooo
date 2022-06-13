@@ -44,3 +44,22 @@ Go 语言中使用最广泛功能最强大的命令行解析库是 cobra，但�
 
 + Gock（https://github.com/h2non/gock）是一个用于Golang的HTTP服务器模拟和期望库，它在很大程度上受到了NodeJs的流行和较早的同类库的启发，称为Nock[2]。与Pact-go（https://github.com/pact-foundation/pact-go）不同，它是一个轻量级的解决方案，通过http.DefaultTransport或任何http.Client使用的http.Transport拦截出站请求。
 
++ zap是uber开源的日志库，选择zap他有两个优势：
+它非常的快
+它同时提供了结构化日志记录和printf风格的日志记录
+
++ jsoniter
+
+做业务开发离不开json的序列化与反序列化，标准库虽然提供了encoding/json，但是它主要是通过反射来实现的，所以性能消耗比较大。jsoniter可以解决这个痛点，其是一款快且灵活的 JSON 解析器，具有良好的性能并能100%兼容标准库
+
++ robfig/cron
+
+github地址：https://github.com/robfig/cron
+业务开发更离不开定时器的使用了，cron就是一个用于管理定时任务的库，用 Go 实现 Linux 中crontab这个命令的效果，与Linux 中crontab命令相似，cron库支持用 5 个空格分隔的域来表示时间。
+
++ ants
+
+某些业务场景还会使用到goroutine池，ants就是一个广泛使用的goroute池，可以有效控制协程数量，防止协程过多影响程序性能。ants也是国人开发的，设计博文写的也很详细的，目前很多大厂也都在使用ants，经历过线上业务检验的，所以可以放心使用。
+
+https://github.com/panjf2000/ants
+ants源码不到1k行，建议大家赏析一下源码

@@ -89,6 +89,7 @@ Windows Shift + Alt + F
 + cmd+P 找文件等操作
 + 调用链：Option + Shift + H
 + 搜索类：cmd+T
++ 跳转实现类：cmd+F12
 
 
 ### Code Runner

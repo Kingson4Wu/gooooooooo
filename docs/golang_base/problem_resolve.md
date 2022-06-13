@@ -153,3 +153,12 @@ test
  .
 
 </pre>
+
+---
+
++ Go 问题排查实战：一个死锁bug的始末:<https://mp.weixin.qq.com/s/KqNHNs75CimBMX9cF2zwZw>
++ perf
++ 火焰图
++ dlv
++ core file debug
++ 汇编、源码
