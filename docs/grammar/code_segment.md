@@ -37,6 +37,13 @@ files := "E:\\data\\test.txt"
 sa := []rune(a) 
 s := string(sa)
 ```   
+
+### byte转rune
++ rune(char)
+
+### string下标访问
++ string[index]
+
 ### 字母字符
 ```go
 func toChar(i int) rune {

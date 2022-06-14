@@ -32,61 +32,13 @@ func main() {
 	root.Right = right
 	nowcoder.IsValidBST(root) */
 
-	node1 := &ListNode{3, nil}
+	/* node1 := &ListNode{3, nil}
 	node2 := &ListNode{5, nil}
 	node1.Next = node2
-	reverseBetween(node1, 1, 2)
+	reverseBetween(node1, 1, 2) */
 
-}
+	//nowcoder.LongestCommonPrefix([]string{"abca", "abc", "abca", "abc", "abcc"})
 
-func reverseBetween(head *ListNode, m int, n int) *ListNode {
-	// write code here
-
-	if m == n {
-		return head
-	}
-
-	index := 0
-	indexHead := head
-
-	var previous *ListNode = nil
-	var startPrevious *ListNode = nil
-	var start *ListNode = nil
-	reverse := false
-
-	for indexHead != nil {
-		index++
-
-		if !reverse {
-			if index == m {
-				start = indexHead
-				startPrevious = previous
-				reverse = true
-			}
-			previous = indexHead
-			indexHead = indexHead.Next
-		} else {
-			temp := indexHead.Next
-			indexHead.Next = previous
-			previous = indexHead
-			indexHead = temp
-
-			if index == n {
-
-				if startPrevious != nil {
-					startPrevious.Next = previous
-				} else {
-					head = previous
-				}
-
-				start.Next = indexHead
-				break
-			}
-		}
-
-	}
-
-	return head
 }
 
 /**
