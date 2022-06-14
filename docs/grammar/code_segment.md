@@ -160,3 +160,14 @@ func main() {
 }
 ```
 如果想使用 Set 的完整功能，如初始化（通过切片构建一个 Set）、Add、Del、Clear、Contains 等操作，可以使用开源库 golang-set。
+
+## map
++ 判断key是否存在
+
+```go
+if value, ok := dict["key1"]; ok {
+        fmt.Printf(value)
+    } else {
+        fmt.Println("key1 不存在")
+    }
+```
