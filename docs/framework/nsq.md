@@ -113,7 +113,7 @@ func (t *Topic) put(m *Message) error {
 + NSQ源码剖析——简单高性能的MQ实现：<https://zhuanlan.zhihu.com/p/152243465> !!!
 
 writeMessageToBackend是一个多态函数，它根据初始化backend的类型选择采用持久化还是临时对象来执行调用Put方法。临时对象在缓冲区满的情况下会被丢弃。
-
+    
 
 消息的持久化
 默认的情况下，只有内存队列不足时MemQueueSize:10000时，才会把数据保存到文件内进行持久到硬盘

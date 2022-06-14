@@ -32,23 +32,57 @@ func main() {
 	root.Right = right
 	nowcoder.IsValidBST(root) */
 
+	node1 := &ListNode{3, nil}
+	node2 := &ListNode{5, nil}
+	node1.Next = node2
+	reverseBetween(node1, 1, 2)
+
 }
 
 func reverseBetween(head *ListNode, m int, n int) *ListNode {
 	// write code here
 
-	index := 1
-	//previous := nil
+	if m == n {
+		return head
+	}
 
-	for head != nil {
+	index := 0
+	indexHead := head
 
-		if index == m {
+	var previous *ListNode = nil
+	var startPrevious *ListNode = nil
+	var start *ListNode = nil
+	reverse := false
 
-		}
-
-		//previous = head
-		head = head.Next
+	for indexHead != nil {
 		index++
+
+		if !reverse {
+			if index == m {
+				start = indexHead
+				startPrevious = previous
+				reverse = true
+			}
+			previous = indexHead
+			indexHead = indexHead.Next
+		} else {
+			temp := indexHead.Next
+			indexHead.Next = previous
+			previous = indexHead
+			indexHead = temp
+
+			if index == n {
+
+				if startPrevious != nil {
+					startPrevious.Next = previous
+				} else {
+					head = previous
+				}
+
+				start.Next = indexHead
+				break
+			}
+		}
 
 	}
 
