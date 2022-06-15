@@ -2,6 +2,12 @@ package nowcoder
 
 func trans(s string, n int) string {
 	// write code here
+
+	a := 'a'
+	a = []rune("sss")[0]
+	if a > 'Z' {
+		return ""
+	}
 	return ""
 }
 
@@ -41,4 +47,50 @@ func trans(s string, n int) string {
 复制
 返回值：
 "Ios"
+
+
+方法一：双逆转（推荐使用）
+思路：
+
+将单词位置的反转，那肯定前后都是逆序，不如我们先将整个字符串反转，这样是不是单词的位置也就随之反转了。但是单词里面的成分也反转了啊，既然如此我们再将单词里面的部分反转过来就行。
+
+具体做法：
+
+step 1：遍历字符串，遇到小写字母，转换成大写，遇到大写字母，转换成小写，遇到空格正常不变。
+step 2：第一次反转整个字符串，这样基本的单词逆序就有了，但是每个单词的字符也是逆的。
+step 3：再次遍历字符串，以每个空间为界，将每个单词反转回正常。
+
+import java.util.*;
+public class Solution {
+    public String trans(String s, int n) {
+        if(n==0)
+            return s;
+        StringBuffer res=new StringBuffer();
+        for(int i = 0; i < n; i++){
+            //大小写转换
+            if(s.charAt(i) <= 'Z' && s.charAt(i) >= 'A')
+                res.append((char)(s.charAt(i) - 'A' + 'a'));
+            else if(s.charAt(i) >= 'a' && s.charAt(i) <= 'z')
+                res.append((char)(s.charAt(i) - 'a' + 'A'));
+            else
+                //空格直接复制
+                res.append(s.charAt(i));
+        }
+        //翻转整个字符串
+        res = res.reverse();
+        for (int i = 0; i < n; i++){
+            int j = i;
+            //以空格为界，二次翻转
+            while(j < n && res.charAt(j) != ' ')
+                j++;
+            String temp = res.substring(i,j);
+            StringBuffer buffer = new StringBuffer(temp);
+            temp = buffer.reverse().toString();
+            res.replace(i,j,temp);
+            i = j;
+        }
+        return res.toString();
+    }
+}
+
 */

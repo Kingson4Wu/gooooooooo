@@ -58,6 +58,15 @@ func toChar(i int) rune {
 ### 基本数据类型的字符串表示之间的转换
 + `strconv.Itoa(23)`
 
+### 字母处理
+```go
+a := 'a'
+	a = []rune("sss")[0]
+	if a > 'Z' {
+		return ""
+	}
+```
+
 ### golang中判断字符串是否为空的方法
 ```go
 if len(str) == 0{
