@@ -1,5 +1,7 @@
 package main
 
+import "github.com/kingson4wu/gooooooooo/nowcoder"
+
 type ListNode struct {
 	Val  int
 	Next *ListNode
@@ -38,6 +40,9 @@ func main() {
 	reverseBetween(node1, 1, 2) */
 
 	//nowcoder.LongestCommonPrefix([]string{"abca", "abc", "abca", "abc", "abcc"})
+
+	result := nowcoder.Solve1("1", "99")
+	println(result)
 
 }
 

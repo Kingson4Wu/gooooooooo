@@ -50,6 +50,11 @@ func toChar(i int) rune {
     return rune('A' - 1 + i)
 }
 ```
+
+### 支持 int 类型转换成字符串
++ `strconv.Itoa`
++ `strconv.Atoi`
+
 ### 基本数据类型的字符串表示之间的转换
 + `strconv.Itoa(23)`
 
