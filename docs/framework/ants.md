@@ -3,6 +3,19 @@
 
 ---
 
+### 亮点
+1. 足够轻量，没有额外的依赖，代码量少
+2. 性能高
+3. 使用自旋锁，基于atomic cas实现，提升并发性能和失败率，维护队列的数据正确，自选5次之后转化为阻塞的锁。
+4. 任务过期检测（定时任务）（过期的时候，将w放到了sync.pool中，避免每次过期，都需要重新创建Pool。）
+	在 goroutine结束前 defer w.pool.workerCache.Put(w)
+5. 基于chan阻塞goroutine实现复用
+6. sync.pool缓存池
+
+
+
+---
+
 
 + example.go
 
@@ -130,7 +143,7 @@ func NewSpinLock() sync.Locker {
 	return new(spinLock)
 }
 
-//自旋锁5次之后自动获得锁！
+//自旋锁5次之后就不让cpu时间了，阻塞获得锁！
 ```    
 
 + goroutine阻塞等待任务，达到复用效果 ！！！！
@@ -153,4 +166,63 @@ func NewSpinLock() sync.Locker {
             return
          }
       }
+```
+
+```go
+
+package ants
+
+import (
+	"runtime"
+	"time"
+)
+
+// goWorker is the actual executor who runs the tasks,
+// it starts a goroutine that accepts tasks and
+// performs function calls.
+type goWorker struct {
+	// pool who owns this worker.
+	pool *Pool
+
+	// task is a job should be done.
+	task chan func()
+
+	// recycleTime will be updated when putting a worker back into queue.
+	recycleTime time.Time
+}
+
+// run starts a goroutine to repeat the process
+// that performs the function calls.
+func (w *goWorker) run() {
+	w.pool.addRunning(1)
+	go func() {
+		defer func() {
+			w.pool.addRunning(-1)
+			w.pool.workerCache.Put(w)
+			if p := recover(); p != nil {
+				if ph := w.pool.options.PanicHandler; ph != nil {
+					ph(p)
+				} else {
+					w.pool.options.Logger.Printf("worker exits from a panic: %v\n", p)
+					var buf [4096]byte
+					n := runtime.Stack(buf[:], false)
+					w.pool.options.Logger.Printf("worker exits from panic: %s\n", string(buf[:n]))
+				}
+			}
+			// Call Signal() here in case there are goroutines waiting for available workers.
+			w.pool.cond.Signal()
+		}()
+
+		for f := range w.task {
+			if f == nil {
+				return
+			}
+			f()
+			if ok := w.pool.revertWorker(w); !ok {
+				return
+			}
+		}
+	}()
+}
+
 ```
