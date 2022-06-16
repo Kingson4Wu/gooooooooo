@@ -8,6 +8,8 @@
 + 有哪些值得学习的 Go 语言开源项目？:<https://www.zhihu.com/question/20801814>
 + https://github.com/avelino/awesome-go
 
++ 有没有推荐的golang的练手项目？ - 终端研发部 的回答:<https://www.zhihu.com/answer/2232959861>
+
 ---
 
 + Go官方的限流器 time/rate

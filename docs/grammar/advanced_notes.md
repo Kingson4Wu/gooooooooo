@@ -75,3 +75,12 @@ func sayhello(name string, f func(string, string)) {
     f("hello", name)
 }
 ```
+
+---
+
++ func()可以作为变量返回，执行的时候加上()即可！！！！
+
+```go
+ctx1, cancel := context.WithCancel(ctx)
+cancel()
+```
