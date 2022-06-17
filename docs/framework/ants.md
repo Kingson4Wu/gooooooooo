@@ -1,6 +1,15 @@
 
 + golang ants协程池源码分析:<https://www.jianshu.com/p/440f4c3f7c78>
 
++ ants：在Submit中再调用当前Pool的Submit可能导致阻塞:<https://blog.csdn.net/bigwhite20xx/article/details/121586364>
+<pre>
+// Note that you are allowed to call Pool.Submit() from the current Pool.Submit(),
+// but what calls for special attention is that you will get blocked with the latest
+// Pool.Submit() call once the current Pool runs out of its capacity, and to avoid this,
+// you should instantiate a Pool with ants.WithNonblocking(true).
+</pre>
+
+
 ---
 
 ### 亮点

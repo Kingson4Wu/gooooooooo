@@ -89,7 +89,6 @@ https://mp.weixin.qq.com/s/2wXNMd9fD3q5v9QNEUWa1A
 + Go语言面试问得最多的面试题：<https://zhuanlan.zhihu.com/p/360306642>
 
 https://github.com/chrislusf/seaweedfs !!!
-https://github.com/panjf2000/ants !!!
 
 
 <pre>

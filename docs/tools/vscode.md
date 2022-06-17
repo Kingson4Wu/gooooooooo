@@ -90,6 +90,7 @@ Windows Shift + Alt + F
 + 调用链：Option + Shift + H
 + 搜索类：cmd+T
 + 跳转实现类：cmd+F12
++ 显示所有函数列表： shift + cmd + O
 
 
 ### Code Runner
