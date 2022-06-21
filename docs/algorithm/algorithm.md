@@ -104,6 +104,44 @@ step 4：如果p、q都在该节点的右边，则递归进入右子树。
         if((p >= root.val && q <= root.val) || (p <= root.val && q >= root.val))
             return root.val;
 
+
++ nowcoder/BM38 在二叉树中找到两个节点的最近公共祖先.go
+(1)深度优先搜索，回溯法递归找路径，比较两个路径第一个不相同的前一个就是公共祖先
+```java
+ public boolean flag = false;
+    //求得根节点到目标节点的路径
+    public void dfs(TreeNode root, ArrayList<Integer> path, int o){
+        if(flag || root == null)
+            return;
+        path.add(root.val);
+        //节点值都不同，可以直接用值比较
+        if(root.val == o){
+            flag = true;
+            return;
+        }
+        //dfs遍历查找
+        dfs(root.left, path, o);
+        dfs(root.right, path, o);
+        //找到
+        if(flag)
+            return;
+        //回溯
+        path.remove(path.size() - 1);
+    }
+```
+(2)二叉树递归
+
+思路：
+
+我们也可以讨论几种情况：
+
+step 1：如果o1和o2中的任一个和root匹配，那么root就是最近公共祖先。
+step 2：如果都不匹配，则分别递归左、右子树。
+step 3：如果有一个节点出现在左子树，并且另一个节点出现在右子树，则root就是最近公共祖先.
+step 4：如果两个节点都出现在左子树，则说明最低公共祖先在左子树中，否则在右子树。
+step 5：继续递归左、右子树，直到遇到step1或者step3的情况。
+
+
 ### 图
 
 #### 有向图
