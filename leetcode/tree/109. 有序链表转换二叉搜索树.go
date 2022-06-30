@@ -1,4 +1,4 @@
-package leetcode
+package tree
 
 func sortedListToBST(head *ListNode) *TreeNode {
 

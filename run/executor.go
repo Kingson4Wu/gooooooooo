@@ -1,7 +1,5 @@
 package main
 
-import "github.com/kingson4wu/gooooooooo/nowcoder"
-
 type ListNode struct {
 	Val  int
 	Next *ListNode
@@ -41,8 +39,26 @@ func main() {
 
 	//nowcoder.LongestCommonPrefix([]string{"abca", "abc", "abca", "abc", "abcc"})
 
-	result := nowcoder.Solve1("1", "99")
-	println(result)
+	//result := nowcoder.Solve1("1", "99")
+	//println(result)
+
+	//[5,3,6,2,4,null,null,1]
+	/*root := &tree.TreeNode{5, nil, nil}
+	left := &tree.TreeNode{3, nil, nil}
+	right := &tree.TreeNode{6, nil, nil}
+	root.Left = left
+	root.Right = right
+
+	leftLeft := &tree.TreeNode{2, nil, nil}
+	leftRight := &tree.TreeNode{4, nil, nil}
+	left.Left = leftLeft
+	left.Right = leftRight
+
+	leftLeftLeft := &tree.TreeNode{1, nil, nil}
+	leftLeft.Left = leftLeftLeft
+
+	val := tree.KthSmallest(root, 3)
+	println(val)*/
 
 }
 
