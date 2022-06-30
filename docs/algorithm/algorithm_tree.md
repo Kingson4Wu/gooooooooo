@@ -164,3 +164,139 @@ step 5：继续递归左、右子树，直到遇到step1或者step3的情况。
 
 + 非递归的中序，使用栈，需要记录状态提前结束遍历的时候，使用栈的方式遍历，代码不会那么丑
 leetcode/tree/230. 二叉搜索树中第K小的元素.go
+
++ leetcode/tree/95. 不同的二叉搜索树 II.go
+回溯递归！！！
+
+```go
+func generateTrees(n int) []*TreeNode {
+    if n == 0 {
+        return nil
+    }
+    return helper(1, n)
+}
+
+func helper(start, end int) []*TreeNode {
+    if start > end {
+        return []*TreeNode{nil}
+    }
+    allTrees := []*TreeNode{}
+    // 枚举可行根节点
+    for i := start; i <= end; i++ {
+        // 获得所有可行的左子树集合
+        leftTrees := helper(start, i - 1)
+        // 获得所有可行的右子树集合
+        rightTrees := helper(i + 1, end)
+        // 从左子树集合中选出一棵左子树，从右子树集合中选出一棵右子树，拼接到根节点上
+        for _, left := range leftTrees {
+            for _, right := range rightTrees {
+                currTree := &TreeNode{i, nil, nil}
+                currTree.Left = left
+                currTree.Right = right
+                allTrees = append(allTrees, currTree)
+            }
+        }
+    }
+    return allTrees
+}
+
+```
+
+---
+# 搜索
++ 树的遍历方法有广度优先（层序遍历），以及深度优先两种方法，分成先序遍历，中序遍历，后序遍历三种。
++ 深度优先使用栈，广度优先使用队列
+## 深度优先搜索
++ 递归地实现 DFS 时，似乎不需要使用任何栈。但实际上，我们使用的是由系统提供的隐式栈，也称为调用栈（Call Stack）
+### 栈实现
+
++ 先序
+``` java
+void InOrderTraversal( BinTree BT)
+{
+    BinTree T=BT;
+    stack s=CreatStack(maxsize);     //定义一个栈
+    while(T||!IsEmpty(s))           
+    {
+        while(T){
+            push(s,T);                  //一直向左将节点入栈，直到左子树为空。
+            T=T->Left;
+        }
+    if(!IsEmpty(s)){                            
+        T=pop(s);                        //节点出栈                          
+        printf("%5d",T->Data);           //输出节点
+        T=T->Right;                      //再转向右子树。
+    }
+    }
+}
+
+```
++ 中序
+``` java
+void InOrderTraversal( BinTree BT)
+{
+    BinTree T=BT;
+    stack s=CreatStack(maxsize);
+    while(T||!IsEmpty(s))
+    {
+        while(T){
+            push(s,T);
+            printf("%5d",T->Data);
+            t=t->Left;
+        }
+    if(!IsEmpty(s)){
+        T=pop(s);
+        T=T->Right;
+    }
+    }
+}
+
+```
++ 后序
+```java
+void PostOrderTraversal(Bintree BT) {  //给节点增加访问次数的属性Visit，初始化为0
+    Bintree T BT;
+    Stack S = CreateStack(Maxsize);
+    while (T || !IsEmpty(S)) {
+        while (T) {
+            if (T->Visit == 0) {//虽然没必要判断，为便于理解
+                T->Visit++;
+                Push(S, T);  //第一次入栈，不访问
+            }
+            T = T->left;   //转向左子树
+        }
+        if (!IsEmpty(S)) {
+            T = Pop(s);
+            if (T->Visit == 2)    {
+                printf("%d", T->Data);//第三次碰到它，访问节点，可以彻底从堆栈弹出了
+                T = NULL;//左右子数均已经访问过
+            }
+            else {
+                T->Visit++;
+                Push(S, T);  //第二次入栈，不访问，（相当于T没有出栈）
+                T = T->Right;  //转向右子树
+            }
+        }
+    }
+
+```
+
++ 广度优先（层序遍历）
+```java
+void LevelOrderTraversal( BinTree BT)
+{
+    Queue Q;
+    BinTree T;
+    if(!BT) return;  //若是空树则直接返回
+    Q = CreatQueue(maxsize); //创建并初始化队列
+    AddQ(Q,BT);
+    while(!IsEmpty(s))
+    {
+        T=deleteQ(Q);     //出队
+        printf("%d\n",T->data);  //访问该节点
+        if(T->Left) AddQ(Q,T->Left);   //分别将其左右子入队
+        if(T->Right) AddQ(Q,T->Right);  
+    }
+}
+
+```
