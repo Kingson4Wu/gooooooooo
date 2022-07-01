@@ -211,73 +211,81 @@ func helper(start, end int) []*TreeNode {
 ### 栈实现
 
 + 先序
-``` java
-void InOrderTraversal( BinTree BT)
-{
-    BinTree T=BT;
-    stack s=CreatStack(maxsize);     //定义一个栈
-    while(T||!IsEmpty(s))           
-    {
-        while(T){
-            push(s,T);                  //一直向左将节点入栈，直到左子树为空。
-            T=T->Left;
-        }
-    if(!IsEmpty(s)){                            
-        T=pop(s);                        //节点出栈                          
-        printf("%5d",T->Data);           //输出节点
-        T=T->Right;                      //再转向右子树。
-    }
-    }
+
+```go
+func (root *TreeNode) preorder() []int{       //非递归前序遍历
+	res:=[]int{}
+	if root==nil{
+		return res
+	}
+	stack:=[]*TreeNode{}           //定义一个栈储存节点信息
+	for root!=nil || len(stack)!=0{
+		if root!=nil{
+			res=append(res,root.data)
+			stack=append(stack,root)        
+			root=root.Lchild
+		}else{
+			root=stack[len(stack)-1]
+			stack=stack[:len(stack)-1]
+			root=root.Rchild
+		}
+	}
+	return res
 }
 
 ```
+
 + 中序
-``` java
-void InOrderTraversal( BinTree BT)
-{
-    BinTree T=BT;
-    stack s=CreatStack(maxsize);
-    while(T||!IsEmpty(s))
-    {
-        while(T){
-            push(s,T);
-            printf("%5d",T->Data);
-            t=t->Left;
-        }
-    if(!IsEmpty(s)){
-        T=pop(s);
-        T=T->Right;
-    }
-    }
+``` go
+func (root *TreeNode) inorder()[]int{
+	res:=[]int{}
+	if root==nil{
+		return res
+	}
+	stack:=[]*TreeNode{}
+	for root!=nil || len(stack)!=0{
+		if root!=nil{
+			stack=append(stack,root)
+			root=root.Lchild
+		}else{
+			root=stack[len(stack)-1]
+			res=append(res,root.data)
+			stack=stack[:len(stack)-1]
+			root=root.Rchild
+		}
+	}
+	return res
 }
+
 
 ```
 + 后序
-```java
-void PostOrderTraversal(Bintree BT) {  //给节点增加访问次数的属性Visit，初始化为0
-    Bintree T BT;
-    Stack S = CreateStack(Maxsize);
-    while (T || !IsEmpty(S)) {
-        while (T) {
-            if (T->Visit == 0) {//虽然没必要判断，为便于理解
-                T->Visit++;
-                Push(S, T);  //第一次入栈，不访问
-            }
-            T = T->left;   //转向左子树
-        }
-        if (!IsEmpty(S)) {
-            T = Pop(s);
-            if (T->Visit == 2)    {
-                printf("%d", T->Data);//第三次碰到它，访问节点，可以彻底从堆栈弹出了
-                T = NULL;//左右子数均已经访问过
-            }
-            else {
-                T->Visit++;
-                Push(S, T);  //第二次入栈，不访问，（相当于T没有出栈）
-                T = T->Right;  //转向右子树
-            }
-        }
-    }
+```go
+func (root *TreeNode)postorder() []int {
+	res:=[]int{}
+	if root==nil{
+		return res
+	}
+	stack:=[]*TreeNode{}
+	pre:=&TreeNode{}
+	stack=append(stack,root)
+	for len(stack)!=0{
+		cur:=stack[len(stack)-1]
+		if (cur.Lchild==nil && cur.Rchild==nil) || (pre!=nil &&(pre==cur.Lchild || pre==cur.Rchild)){
+			res=append(res,cur.data)
+			pre=cur
+			stack=stack[:len(stack)-1]
+		}else{
+			if cur.Rchild!=nil{
+				stack=append(stack,cur.Rchild)
+			}
+			if cur.Lchild!=nil{
+				stack=append(stack,cur.Lchild)
+			}
+		}
+	}
+	return res
+}
 
 ```
 
@@ -296,6 +304,22 @@ void LevelOrderTraversal( BinTree BT)
         printf("%d\n",T->data);  //访问该节点
         if(T->Left) AddQ(Q,T->Left);   //分别将其左右子入队
         if(T->Right) AddQ(Q,T->Right);  
+    }
+}
+
+```
+
++ leetcode/tree/669. 修剪二叉搜索树.go
+```java
+class Solution {
+    public TreeNode trimBST(TreeNode root, int L, int R) {
+        if (root == null) return root;
+        if (root.val > R) return trimBST(root.left, L, R);
+        if (root.val < L) return trimBST(root.right, L, R);
+
+        root.left = trimBST(root.left, L, R);
+        root.right = trimBST(root.right, L, R);
+        return root;
     }
 }
 

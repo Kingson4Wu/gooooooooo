@@ -1,5 +1,7 @@
 package main
 
+import "github.com/kingson4wu/gooooooooo/leetcode/tree"
+
 type ListNode struct {
 	Val  int
 	Next *ListNode
@@ -59,6 +61,22 @@ func main() {
 
 	val := tree.KthSmallest(root, 3)
 	println(val)*/
+
+	root := &tree.TreeNode{1, nil, nil}
+	left := &tree.TreeNode{2, nil, nil}
+	right := &tree.TreeNode{3, nil, nil}
+	root.Left = left
+	root.Right = right
+
+	leftLeft := &tree.TreeNode{4, nil, nil}
+	leftRight := &tree.TreeNode{5, nil, nil}
+	left.Left = leftLeft
+	left.Right = leftRight
+
+	leftLeftLeft := &tree.TreeNode{6, nil, nil}
+	right.Left = leftLeftLeft
+	val := tree.CountNodes(root)
+	println(val)
 
 }
 
