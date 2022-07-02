@@ -62,7 +62,7 @@ func main() {
 	val := tree.KthSmallest(root, 3)
 	println(val)*/
 
-	root := &tree.TreeNode{1, nil, nil}
+	/* root := &tree.TreeNode{1, nil, nil}
 	left := &tree.TreeNode{2, nil, nil}
 	right := &tree.TreeNode{3, nil, nil}
 	root.Left = left
@@ -76,7 +76,23 @@ func main() {
 	leftLeftLeft := &tree.TreeNode{6, nil, nil}
 	right.Left = leftLeftLeft
 	val := tree.CountNodes(root)
-	println(val)
+	println(val) */
+
+	root := &tree.TreeNode{5, nil, nil}
+	left := &tree.TreeNode{3, nil, nil}
+	right := &tree.TreeNode{6, nil, nil}
+	root.Left = left
+	root.Right = right
+
+	leftLeft := &tree.TreeNode{2, nil, nil}
+	leftRight := &tree.TreeNode{4, nil, nil}
+	left.Left = leftLeft
+	left.Right = leftRight
+
+	rightRight := &tree.TreeNode{7, nil, nil}
+	right.Right = rightRight
+
+	tree.PrintTree(root)
 
 }
 

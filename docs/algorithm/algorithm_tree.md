@@ -1,5 +1,5 @@
 + 树遍历：前序遍历，后序，先序（打印）；深度遍历，广度遍历（搜索）
-+ 搜索树就是有序的意思（中序）- 二叉搜索树满足每个节点的左子树上的所有节点均严格小于当前节点且右子树上的所有节点均严格大于当前节点。
++ 搜索树就是有序的意思（中序）- 二叉搜索树满足每个节点的左子树上的所有节点均严格小于当前节点且右子树上的所有节点均严格大于当前节点。（注意不能等于！！！！）
 + 树：left和right都为空才是叶子节点
 + 搜索树倒序，迭代法：右子树要全部入栈，直到右子数为空
 处理完当前结点，再处理左结点，重复左结点的右子树的入栈操作
@@ -211,7 +211,9 @@ func helper(start, end int) []*TreeNode {
 ### 栈实现
 
 + 先序
-
+(1)`root!=nil || len(stack)>0`
+(2) root!=nil 处理逻辑，入栈，左子树赋值
+(3) else 出栈，右子树赋值
 ```go
 func (root *TreeNode) preorder() []int{       //非递归前序遍历
 	res:=[]int{}
@@ -236,6 +238,17 @@ func (root *TreeNode) preorder() []int{       //非递归前序遍历
 ```
 
 + 中序
+
+(1)`root!=nil || len(stack)>0`
+(2) root!=nil 入栈，左子树赋值
+(3) else 出栈，处理逻辑，右子树赋值
+
+
+(1)`root!=nil || len(stack)>0`
+(2)左子树循环入栈
+(3)出栈，处理逻辑
+(4)`root=root.Right`
+
 ``` go
 func (root *TreeNode) inorder()[]int{
 	res:=[]int{}
@@ -256,10 +269,33 @@ func (root *TreeNode) inorder()[]int{
 	}
 	return res
 }
+```
 
+```go
+func isValidBST(root *TreeNode) bool {
+    stack := []*TreeNode{}
+    inorder := math.MinInt64
+    for len(stack) > 0 || root != nil {
+        for root != nil {
+            stack = append(stack, root)
+            root = root.Left
+        }
+        root = stack[len(stack)-1]
+        stack = stack[:len(stack)-1]
+        if root.Val <= inorder {
+            return false
+        }
+        inorder = root.Val
+        root = root.Right
+    }
+    return true
+}
 
 ```
+
 + 后序
+有点复杂，日
+
 ```go
 func (root *TreeNode)postorder() []int {
 	res:=[]int{}
@@ -285,6 +321,31 @@ func (root *TreeNode)postorder() []int {
 		}
 	}
 	return res
+}
+
+```
+
+
+递归
+```go
+
+func findBottomLeftValue(root *TreeNode) (curVal int) {
+    curHeight := 0
+    var dfs func(*TreeNode, int)
+    dfs = func(node *TreeNode, height int) {
+        if node == nil {
+            return
+        }
+        height++
+        dfs(node.Left, height)
+        dfs(node.Right, height)
+        if height > curHeight {
+            curHeight = height
+            curVal = node.Val
+        }
+    }
+    dfs(root, 0)
+    return
 }
 
 ```
@@ -324,3 +385,78 @@ class Solution {
 }
 
 ```
+
++ leetcode/tree/114. 二叉树展开为链表.go
+前两种方法都借助前序遍历，前序遍历过程中需要使用栈存储节点。有没有空间复杂度是 O(1)O(1) 的做法呢？
+
+注意到前序遍历访问各节点的顺序是根节点、左子树、右子树。如果一个节点的左子节点为空，则该节点不需要进行展开操作。
+如果一个节点的左子节点不为空，则该节点的左子树中的最后一个节点被访问之后，该节点的右子节点被访问。
+该节点的左子树中最后一个被访问的节点是左子树中的最右边的节点，也是该节点的前驱节点。
+因此，问题转化成寻找当前节点的前驱节点。
+
+具体做法是，对于当前节点，如果其左子节点不为空，则在其左子树中找到最右边的节点，作为前驱节点，
+将当前节点的右子节点赋给前驱节点的右子节点，然后将当前节点的左子节点赋给当前节点的右子节点，
+并将当前节点的左子节点设为空。对当前节点处理结束后，继续处理链表中的下一个节点，直到所有节点都处理结束。
+```go
+
+func flatten(root *TreeNode)  {
+    curr := root
+    for curr != nil {
+        if curr.Left != nil {
+            next := curr.Left
+            predecessor := next
+            for predecessor.Right != nil {
+                predecessor = predecessor.Right
+            }
+            predecessor.Right = curr.Right
+            curr.Left, curr.Right = nil, next
+        }
+        curr = curr.Right
+    }
+}
+
+```
+
++ leetcode/tree/117. 填充每个节点的下一个右侧节点指针 II.go
+方法二：使用已建立的 next 指针 ！！！！
+空间复杂度：O(1)，不需要存储额外的节点。
+
++ leetcode/tree/450. 删除二叉搜索树中的节点.go
+
+root 为叶子节点，没有子树。此时可以直接将它删除，即返回空。
+root 只有左子树，没有右子树。此时可以将它的左子树作为新的子树，返回它的左子节点。
+root 只有右子树，没有左子树。此时可以将它的右子树作为新的子树，返回它的右子节点。
+
+root 有左右子树，这时可以将 root 的后继节点（比 root 大的最小节点，即它的右子树中的最小节点，记为 successor作为新的根节点替代 root，并将 successor 从 root 的右子树中删除，使得在保持有序性的情况下合并左右子树。
+简单证明，successor 位于 root 的右子树中，因此大于 root 的所有左子节点；successor 是 root 的右子树中的最小节点，因此小于 root 的右子树中的其他节点。以上两点保持了新子树的有序性。
+
++ leetcode/tree/508. 出现次数最多的子树元素和.go
+
+```go
+func findFrequentTreeSum(root *TreeNode) (ans []int) {
+    cnt := map[int]int{}
+    maxCnt := 0
+    var dfs func(*TreeNode) int
+    dfs = func(node *TreeNode) int {
+        if node == nil {
+            return 0
+        }
+        sum := node.Val + dfs(node.Left) + dfs(node.Right)
+        cnt[sum]++
+        if cnt[sum] > maxCnt {
+            maxCnt = cnt[sum]
+        }
+        return sum
+    }
+    dfs(root)
+
+    for s, c := range cnt {
+        if c == maxCnt {
+            ans = append(ans, s)
+        }
+    }
+    return
+}
+
+```
++ 匿名函数写法！！

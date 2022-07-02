@@ -192,3 +192,6 @@ if value, ok := dict["key1"]; ok {
         fmt.Println("key1 不存在")
     }
 ```
+
+## 次方
++ 1<<n  (2的n次方)
