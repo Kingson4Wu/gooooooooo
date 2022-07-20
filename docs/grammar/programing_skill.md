@@ -909,5 +909,15 @@ golang 的编译器是怎么做的呢？它会在代码里给你设定一个通�
 如果你深入了解 DDD，就会了解到'六边形架构'、'CQRS(Command Query Responsibility Segregation，查询职责分离)架构'、'事件驱动架构'等关键词。这是 DDD 构建自己体系的基石，这些架构及是细节又是顶层设计，也值得了解一下。
 
 
+---
+
++ 如何更酷地实现 Go 程序热开关功能:<https://mp.weixin.qq.com/s/Vk-rmlA_rC4SxP313UQSZw>
+   - 通过linux信号通知程序
+
++ 在Go中如何正确重试请求：<https://mp.weixin.qq.com/s/GKggVplX_ZzoXJDuWf5ctA> !!
+
++ Go中的HTTP debug技能 了解一下:<https://mp.weixin.qq.com/s/lHPK8Mtxf-7z81VEJxrplw>
+   - 1.将包含钩子函数的 httptrace.ClientTrace 放入request的context中进行跟踪；
+   - 2.对http.Client进行跟踪，使用 http.RoundTripper wrapper 来标识当前的请求
 
 
