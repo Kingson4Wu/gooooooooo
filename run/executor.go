@@ -1,6 +1,6 @@
 package main
 
-import "github.com/kingson4wu/gooooooooo/leetcode/tree"
+import "github.com/kingson4wu/gooooooooo/leetcode/dp"
 
 type ListNode struct {
 	Val  int
@@ -78,7 +78,7 @@ func main() {
 	val := tree.CountNodes(root)
 	println(val) */
 
-	root := &tree.TreeNode{5, nil, nil}
+	/* root := &tree.TreeNode{5, nil, nil}
 	left := &tree.TreeNode{3, nil, nil}
 	right := &tree.TreeNode{6, nil, nil}
 	root.Left = left
@@ -92,7 +92,9 @@ func main() {
 	rightRight := &tree.TreeNode{7, nil, nil}
 	right.Right = rightRight
 
-	tree.PrintTree(root)
+	tree.PrintTree(root) */
+
+	dp.MaxProfit([]int{4, 7, 1, 2, 11})
 
 }
 
