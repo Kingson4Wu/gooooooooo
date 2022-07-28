@@ -1,4 +1,4 @@
-package algorithm
+package tree
 
 /**
 二叉搜索树的第k大节点
@@ -6,7 +6,7 @@ package algorithm
 https://leetcode-cn.com/problems/er-cha-sou-suo-shu-de-di-kda-jie-dian-lcof/
 */
 
-var result int
+var result11 int
 
 func kthLargest(root *TreeNode, k int) int {
 
@@ -15,7 +15,7 @@ func kthLargest(root *TreeNode, k int) int {
 	//}
 
 	trace(root, k)
-	return result
+	return result11
 }
 
 func trace(root *TreeNode, k int) int {
@@ -28,7 +28,7 @@ func trace(root *TreeNode, k int) int {
 	count--
 
 	if count == 0 {
-		result = root.Val
+		result11 = root.Val
 	}
 
 	if root.Left != nil {

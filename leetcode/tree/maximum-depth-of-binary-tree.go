@@ -1,4 +1,4 @@
-package algorithm
+package tree
 
 /**
 104. 二叉树的最大深度
@@ -7,7 +7,7 @@ package algorithm
 说明: 叶子节点是指没有子节点的节点。
 https://leetcode-cn.com/problems/maximum-depth-of-binary-tree/
 */
-func maxDepth(root *TreeNode) int {
+func maxDepth2(root *TreeNode) int {
 
 	if root == nil {
 		return 0

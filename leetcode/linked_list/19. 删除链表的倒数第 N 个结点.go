@@ -1,10 +1,6 @@
-package algorithm
+package linked_list
 
 // ListNode is ...
-type ListNode struct {
-	Val  int
-	Next *ListNode
-}
 
 /*
 19. 删除链表的倒数第N个节点

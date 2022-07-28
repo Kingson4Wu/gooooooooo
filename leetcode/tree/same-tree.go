@@ -1,4 +1,4 @@
-package algorithm
+package tree
 
 /**
 100. 相同的树

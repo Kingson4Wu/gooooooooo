@@ -1,13 +1,8 @@
-package algorithm
+package tree
 
 // TreeNode is ...
 //https://stackoverflow.com/questions/53004291/exported-type-should-have-comment-or-be-unexported-golang-vs-code
 //翻转一棵二叉树(左右翻转): https://leetcode-cn.com/problems/invert-binary-tree/
-type TreeNode struct {
-	Val   int
-	Left  *TreeNode
-	Right *TreeNode
-}
 
 func invertTree(root *TreeNode) *TreeNode {
 	if root == nil {

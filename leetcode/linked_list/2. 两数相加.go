@@ -1,4 +1,4 @@
-package algorithm
+package linked_list
 
 /**
 2. 两数相加

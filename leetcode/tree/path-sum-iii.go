@@ -1,4 +1,4 @@
-package algorithm
+package tree
 
 /**
 给定一个二叉树，它的每个结点都存放着一个整数值。
@@ -13,7 +13,7 @@ package algorithm
 链接：https://leetcode-cn.com/problems/path-sum-iii
 著作权归领扣网络所有。商业转载请联系官方授权，非商业转载请注明出处。
 */
-func pathSum(root *TreeNode, sum int) int {
+func pathSum3(root *TreeNode, sum int) int {
 
 	return 0
 }
