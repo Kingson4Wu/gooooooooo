@@ -104,7 +104,7 @@ func jump(nums []int) int {
 109 / 109
 
 
-
+还有贪心算法的写法更高效！！todo
 
 
 
