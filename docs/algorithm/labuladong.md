@@ -1701,5 +1701,5 @@ int bulbSwitch(int n) {
 ---
 
 
-+ split -b 60m labuladong的算法小抄完整版.pdf labuladong的算法小抄完整版.part-
++ split -b 40m labuladong的算法小抄完整版.pdf labuladong的算法小抄完整版.part-
 + cat labuladong的算法小抄完整版.part-* > ~/downloads/labuladong的算法小抄完整版.pdf
