@@ -1,0 +1,1 @@
++ golang不像java那样可以设置参数限制内存，一般可以用CGrooup来限制

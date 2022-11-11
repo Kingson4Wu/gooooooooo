@@ -16,6 +16,9 @@
 `golang.org/x/time/rate`
 <https://zhuanlan.zhihu.com/p/89820414>
 
++ 每日一库之一个兼具单机和集群模式的轻量级限流器 throttled
+https://github.com/throttled/throttled
+
 + 用 Cobra 构建命令行工具
 `go get -u github.com/spf13/cobra/cobra`
 

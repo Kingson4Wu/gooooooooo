@@ -1,0 +1,1 @@
++ 作为Gopher，你知道Go的注释即文档应该怎么写吗:<https://mp.weixin.qq.com/s/nAeZIEyKkhE6_kId_yRS-g>
