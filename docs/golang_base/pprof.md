@@ -28,6 +28,10 @@ Could not execute dot; may need to install graphviz.
 
 brew install graphviz
 
+go tool pprof -alloc_space -base ~/Downloads/profile.pb.gz ~/Downloads/profile\ \(2\).pb.gz
+
+go tool pprof -alloc_space  ~/Downloads/profile\ \(2\).pb.gz
+
 <pre>
 ==> nginx
 Docroot is: /usr/local/var/www
@@ -78,6 +82,19 @@ import "runtime/pprof"
 /debug/pprof/block：block Profiling 的路径
 /debug/pprof/goroutines：运行的 goroutines 列表，以及调用关系
 
+
+flat、flat% 表示函数在 CPU 上运行的时间以及百分比
+sum% 表示当前函数累加使用 CPU 的比例
+cum、cum%表示该函数以及子函数运行所占用的时间和比例，应该大于等于前两列的值
+
+inuse_space — 已分配但尚未释放的内存空间
+inuse_objects——已分配但尚未释放的对象数量
+alloc_space — 分配的内存总量（已释放的也会统计）
+alloc_objects — 分配的对象总数（无论是否释放）
+
++ golang 内存分析/内存泄漏:<https://cloud.tencent.com/developer/article/1703742>
+<https://zhuanlan.zhihu.com/p/265080950>
+
 ----
 ### 生成火焰图
 + https://github.com/uber/go-torch
@@ -85,3 +102,5 @@ import "runtime/pprof"
 
 + go tool pprof -http=:6061 http://localhost:6060/debug/pprof/block
 + http://localhost:6061/ui/flamegraph即可查看生成的火焰图。
+
+
