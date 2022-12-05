@@ -13,6 +13,7 @@ import _ "net/http/pprof"
 
 // cpu
 go tool pprof -http :8080 http://localhost:30116/debug/pprof/profile
+(这种采样是当前的快照)
 
 go tool pprof -http :8080 http://localhost:30116/debug/fgprof
 fgprof 不仅能检测到 onCPU（也就是 cpuIntensiveTask）部分，还能检测到 offCPU （也就是 slowNetworkRequest）部分,不过需要注意的是 fgprof 对性能的影响较大
@@ -54,6 +55,19 @@ http://www.graphviz.org/download/
     + `./wrk -d 60 -c 10000  -t 32 'http://127.0.0.1:3242/svdvsdv'`
 
 
++ lua.post
+```lua
+wrk.method = "POST"
+wrk.body = 'xxxx'
+wrk.headers["protocol"] = "json"
+wrk.headers["Content-Type"] = "application/x-thrift"
+wrk.headers["xxx"] = "cxxx"
+wrk.headers["Accept"]= "*/*"
+response = function(status, headers, body)
+--print(body)
+end
+```
++ ./wrk -d 60 -c 100  -t 32 -s post.lua http://127.0.0.1:30116/xxxxx
    
 
 ---

@@ -522,8 +522,14 @@ http://localhost:8080/debug/pprof/profile?seconds=60
 >> Go工具链通过pprof子命令提供了两种性能数据剖析方法：命令行交互式和Web图形化。命令行交互式的剖析方法更常用，也是基本的性能数据剖析方法；而基于Web图形化的剖析方法在剖析结果展示上更为直观。
 
 >> （1）命令行交互方式
-可以通过下面三种方式执行go tool pprof以进入采用命令行交互式的性能数据剖析环节：
-$go tool pprof xxx.test cpu.prof // 剖析通过性能基准测试采集的数据$go tool pprof standalone_app cpu.prof // 剖析独立程序输出的性能采集数据// 通过net/http/pprof注册的性能采集数据服务端点获取数据并剖析$go tool pprof http://localhost:8080/debug/pprof/profile
+可以通过下面三种方式执行
+go tool pprof以进入采用命令行交互式的性能数据剖析环节：
+$go tool pprof xxx.test cpu.prof // 剖析通过性能基准测试采集的数据
+
+$go tool pprof standalone_app cpu.prof // 剖析独立程序输出的性能采集数据// 
+
+通过net/http/pprof注册的性能采集数据服务端点获取数据并剖析
+$go tool pprof http://localhost:8080/debug/pprof/profile
 
 >> topN命令的输出结果默认按flat(flat%)从大到小的顺序输出。
 ◦  flat列的值表示函数自身代码在数据采样过程中的执行时长。
