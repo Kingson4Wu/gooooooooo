@@ -230,4 +230,259 @@ $ go tool pprof -text -nodecount=10 ./http.test cpu.log
 
 ----
 
+# 《Go语言高级编程》
 
++ 语言基因族谱
++ 首先看基因图谱的左边一支。可以明确看出 Go 语言的并发特性是由贝尔实验室的 Hoare 于 1978 年发布的 CSP 理论演化而来。其后，CSP 并发模型在 Squeak/NewSqueak 和 Alef 等编程语言中逐步完善并走向实际应用，最终这些设计经验被消化并吸收到了 Go 语言中。业界比较熟悉的 Erlang 编程语言的并发编程模型也是 CSP 理论的另一种实现。
+
+```go
+func main() {
+    done := make(chan int)
+
+    go func(){
+        println("你好, 世界")
+        done <- 1
+    }()
+
+    <-done
+}
+```
+
++ 严谨的并发程序的正确性不应该是依赖于 CPU 的执行速度和休眠时间等不靠谱的因素的。严谨的并发也应该是可以静态推导出结果的：根据线程内顺序一致性，结合 Channel 或 sync 同步事件的可排序性来推导，最终完成各个线程各段代码的偏序关系排序。如果两个事件无法根据此规则来排序，那么它们就是并发的，也就是执行先后顺序不可靠的。
+解决同步问题的思路是相同的：使用显式的同步。
+
+### 1.6 常见的并发模式
++ Go 语言最吸引人的地方是它内建的并发支持。Go 语言并发体系的理论是 C.A.R Hoare 在 1978 年提出的 CSP（Communicating Sequential Process，通讯顺序进程）。CSP 有着精确的数学模型，并实际应用在了 Hoare 参与设计的 T9000 通用计算机上。从 NewSqueak、Alef、Limbo 到现在的 Go 语言，对于对 CSP 有着 20 多年实战经验的 Rob Pike 来说，他更关注的是将 CSP 应用在通用编程语言上产生的潜力。作为 Go 并发编程核心的 CSP 理论的核心概念只有一个：同步通信。关于同步通信的话题我们在前面一节已经讲过，本节我们将简单介绍下 Go 语言中常见的并发模式。
+
++ Do not communicate by sharing memory; instead, share memory by communicating.
+不要通过共享内存来通信，而应通过通信来共享内存。
++ 这是更高层次的并发编程哲学(通过管道来传值是 Go 语言推荐的做法)。虽然像引用计数这类简单的并发问题通过原子操作或互斥锁就能很好地实现，但是通过 Channel 来控制访问能够让你写出更简洁正确的程序。
+
+## 第 2 章 CGO 编程
+## 第 3 章 Go 汇编语言
+## 第 4 章 RPC 和 Protobuf
+## 第 5 章 go 和 Web
+## 第 6 章 分布式系统
+
+## 附录A：Go语言常见坑
+
++ 数组是值传递
+在函数调用参数中，数组是值传递，无法通过修改数组类型的参数返回结果。
+```go
+func main() {
+    x := [3]int{1, 2, 3}
+
+    func(arr [3]int) {
+        arr[0] = 7
+        fmt.Println(arr)
+    }(x)
+
+    fmt.Println(x)
+}
+```
+
++ recover必须在defer函数中运行
+recover捕获的是祖父级调用时的异常，直接调用时无效：
+```go
+func main() {
+    recover()
+    panic(1)
+}
+```
+直接defer调用也是无效：
+```go
+func main() {
+    defer recover()
+    panic(1)
+}
+```
+defer调用时多层嵌套依然无效：
+```go
+func main() {
+    defer func() {
+        func() { recover() }()
+    }()
+    panic(1)
+}
+```
+必须在defer函数中直接调用才有效：
+```go
+func main() {
+    defer func() {
+        recover()
+    }()
+    panic(1)
+}
+```
+
++ 独占CPU导致其它Goroutine饿死
+Goroutine 是协作式抢占调度（Go1.14版本之前），Goroutine本身不会主动放弃CPU：
+```go
+func main() {
+    runtime.GOMAXPROCS(1)
+
+    go func() {
+        for i := 0; i < 10; i++ {
+            fmt.Println(i)
+        }
+    }()
+
+    for {} // 占用CPU
+}
+```
+解决的方法是在for循环加入runtime.Gosched()调度函数：
+```go
+func main() {
+    runtime.GOMAXPROCS(1)
+
+    go func() {
+        for i := 0; i < 10; i++ {
+            fmt.Println(i)
+        }
+    }()
+
+    for {
+        runtime.Gosched()
+    }
+}
+```
+或者是通过阻塞的方式避免CPU占用：
+```go
+func main() {
+    runtime.GOMAXPROCS(1)
+
+    go func() {
+        for i := 0; i < 10; i++ {
+            fmt.Println(i)
+        }
+        os.Exit(0)
+    }()
+
+    select{}
+}
+```
+
++ 闭包错误引用同一个变量
+```go
+func main() {
+    for i := 0; i < 5; i++ {
+        defer func() {
+            println(i)
+        }()
+    }
+}
+```
+改进的方法是在每轮迭代中生成一个局部变量：
+```go
+func main() {
+    for i := 0; i < 5; i++ {
+        i := i
+        defer func() {
+            println(i)
+        }()
+    }
+}
+```
+或者是通过函数参数传入：
+```go
+func main() {
+    for i := 0; i < 5; i++ {
+        defer func(i int) {
+            println(i)
+        }(i)
+    }
+}
+```
+
++ 在循环内部执行defer语句
+defer在函数退出时才能执行，在for执行defer会导致资源延迟释放：
+```go
+func main() {
+    for i := 0; i < 5; i++ {
+        f, err := os.Open("/path/to/file")
+        if err != nil {
+            log.Fatal(err)
+        }
+        defer f.Close()
+    }
+}
+```
+解决的方法可以在for中构造一个局部函数，在局部函数内部执行defer：
+```go
+func main() {
+    for i := 0; i < 5; i++ {
+        func() {
+            f, err := os.Open("/path/to/file")
+            if err != nil {
+                log.Fatal(err)
+            }
+            defer f.Close()
+        }()
+    }
+}
+```
++ 全部看一遍吧,...
+
+
+## 附录B：有趣的代码片段
+这里收集一些比较有意思的Go程序片段。
+
++ 禁止 main 函数退出的方法
+```go 
+func main() {
+    defer func() { for {} }()
+}
+
+func main() {
+    defer func() { select {} }()
+}
+
+func main() {
+    defer func() { <-make(chan bool) }()
+}
+```
+
++ Assert测试断言
+```go
+type testing_TBHelper interface {
+    Helper()
+}
+
+func Assert(tb testing.TB, condition bool, args ...interface{}) {
+    if x, ok := tb.(testing_TBHelper); ok {
+        x.Helper() // Go1.9+
+    }
+    if !condition {
+        if msg := fmt.Sprint(args...); msg != "" {
+            tb.Fatalf("Assert failed, %s", msg)
+        } else {
+            tb.Fatalf("Assert failed")
+        }
+    }
+}
+
+func Assertf(tb testing.TB, condition bool, format string, a ...interface{}) {
+    if x, ok := tb.(testing_TBHelper); ok {
+        x.Helper() // Go1.9+
+    }
+    if !condition {
+        if msg := fmt.Sprintf(format, a...); msg != "" {
+            tb.Fatalf("Assertf failed, %s", msg)
+        } else {
+            tb.Fatalf("Assertf failed")
+        }
+    }
+}
+
+func AssertFunc(tb testing.TB, fn func() error) {
+    if x, ok := tb.(testing_TBHelper); ok {
+        x.Helper() // Go1.9+
+    }
+    if err := fn(); err != nil {
+        tb.Fatalf("AssertFunc failed, %v", err)
+    }
+}
+
+```
+
+----
