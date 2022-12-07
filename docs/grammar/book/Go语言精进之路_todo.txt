@@ -53,7 +53,30 @@ Go核心团队已经给benchcmp工具打上了“deprecation”（不建议使�
 
 
 要实现零内存分配，可以像下面这样优化代码：
-// chapter8/sources/go-pprof-optimization-demo/step4/demo.go...var visitors int64 // 必须被自动访问var rxOptionalID = regexp.MustCompile(`^\d*$`)var bufPool = sync.Pool{    New: func() interface{} {        return bytes.NewBuffer(make([]byte, 128))    },}func handleHi(w http.ResponseWriter, r *http.Request) {    if !rxOptionalID.MatchString(r.FormValue("color")) {        http.Error(w, "Optional color is invalid", http.StatusBadRequest)        return    }    visitNum := atomic.AddInt64(&visitors, 1)    buf := bufPool.Get().(*bytes.Buffer)    defer bufPool.Put(buf)    buf.Reset()    buf.WriteString("<h1 style='color: ")    buf.WriteString(r.FormValue("color"))    buf.WriteString("'>Welcome!</h1>You are visitor number ")    b := strconv.AppendInt(buf.Bytes(), visitNum, 10)    b = append(b, '!')    w.Write(b)}
+// chapter8/sources/go-pprof-optimization-demo/step4/demo.go...
+var visitors int64 // 必须被自动访问
+var rxOptionalID = regexp.MustCompile(`^\d*$`)
+var bufPool = sync.Pool{    
+	New: func() interface{} {        
+		return bytes.NewBuffer(make([]byte, 128))    
+		},
+	}
+func handleHi(w http.ResponseWriter, r *http.Request) {    
+	if !rxOptionalID.MatchString(r.FormValue("color")) {        
+		http.Error(w, "Optional color is invalid", http.StatusBadRequest)        
+		return    
+	}    
+	visitNum := atomic.AddInt64(&visitors, 1)    
+	buf := bufPool.Get().(*bytes.Buffer)    
+	defer bufPool.Put(buf)    
+	buf.Reset()    
+	buf.WriteString("<h1 style='color: ")    
+	buf.WriteString(r.FormValue("color"))    
+	buf.WriteString("'>Welcome!</h1>You are visitor number ")    
+	b := strconv.AppendInt(buf.Bytes(), visitNum, 10)    
+	b = append(b, '!')    
+	w.Write(b)
+}
 这里有几点主要优化：
 ◦  使用sync.Pool减少重新分配bytes.Buffer的次数；
 ◦  采用预分配底层存储的bytes.Buffer拼接输出；
@@ -65,13 +88,42 @@ Go核心团队已经给benchcmp工具打上了“deprecation”（不建议使�
 充分利用你手头上的工具对你编写的代码进行严格的检查，这些工具包括编译器（尽可能将警告级别提升到你可以接受的最高级别）、静态代码检查工具（linter，如go vet）等。
 
 
-// chapter9/sources/go-bytes-and-strings/string_and_bytes_reader.go...func main() {    var buf bytes.Buffer    var s = "I love Go!!"    _, err := io.Copy(&buf, strings.NewReader(s))    if err != nil {        panic(err)    }    fmt.Printf("%q\n", buf.String()) // "I love Go!!"    buf.Reset()    var b = []byte("I love Go!!")    _, err = io.Copy(&buf, bytes.NewReader(b))    if err != nil {        panic(err)    }    fmt.Printf("%q\n", buf.String()) // "I love Go!!"}
+// chapter9/sources/go-bytes-and-strings/string_and_bytes_reader.go...
+func main() {
+	var buf bytes.Buffer
+	var s = "I love Go!!"
+	_, err := io.Copy(&buf, strings.NewReader(s))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%q\n", buf.String()) // "I love Go!!"
+	buf.Reset()
+	var b = []byte("I love Go!!")
+	_, err = io.Copy(&buf, bytes.NewReader(b))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%q\n", buf.String()) // "I love Go!!"
+}
 通过创建的strings.Reader或bytes.Reader新实例，我们就可以读取作为数据源的字符串或字节切片中的数据。
 
 
 
 通过包裹函数返回的包裹类型，我们还可以实现对读出或写入数据的变换，比如压缩等。Go标准库中的compress/gzip包就提供了这样的包裹函数与包裹类型。我们看一个压缩数据并形成压缩文件的例子：
-// chapter9/sources/go-read-and-write/gzip_compress_data.go...func main() {    file := "./hello_gopher.gz"    f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)    ...    defer f.Close()    zw := gzip.NewWriter(f)    defer zw.Close()    _, err = zw.Write([]byte("hello, gopher! I love golang!!"))    if err != nil {        fmt.Println("write compressed data error:", err)    }    fmt.Println("write compressed data ok")}
+// chapter9/sources/go-read-and-write/gzip_compress_data.go...
+func main() {    
+	file := "./hello_gopher.gz"    
+	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)    
+	...    
+	defer f.Close()    
+	zw := gzip.NewWriter(f)    
+	defer zw.Close()    
+	_, err = zw.Write([]byte("hello, gopher! I love golang!!"))    
+	if err != nil {        
+		fmt.Println("write compressed data error:", err)    
+	}    
+	fmt.Println("write compressed data ok")
+}
 
 
 （2）高效类型转换

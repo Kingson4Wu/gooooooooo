@@ -1608,7 +1608,21 @@ func YourWrapperFunc(param YourInterfaceType) YourInterfaceType
 >> 2. 通过包裹类型实现数据压缩/解压缩
 
 >> 通过包裹函数返回的包裹类型，我们还可以实现对读出或写入数据的变换，比如压缩等。Go标准库中的compress/gzip包就提供了这样的包裹函数与包裹类型。我们看一个压缩数据并形成压缩文件的例子：
-// chapter9/sources/go-read-and-write/gzip_compress_data.go...func main() {    file := "./hello_gopher.gz"    f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)    ...    defer f.Close()    zw := gzip.NewWriter(f)    defer zw.Close()    _, err = zw.Write([]byte("hello, gopher! I love golang!!"))    if err != nil {        fmt.Println("write compressed data error:", err)    }    fmt.Println("write compressed data ok")}
+// chapter9/sources/go-read-and-write/gzip_compress_data.go...
+func main() {    
+	file := "./hello_gopher.gz"    
+	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)    
+	...    
+	defer f.Close()    
+	zw := gzip.NewWriter(f)    
+	defer zw.Close()    
+	_, err = zw.Write([]byte("hello, gopher! I love golang!!"))    
+	if err != nil {        
+		fmt.Println("write compressed data error:", err)    
+	}    
+	fmt.Println("write compressed data ok")
+}
+
 
 >> 这里利用gzip包提供的包裹函数NewWriter对io.File实例进行包裹，得到包裹类型gzip.Writer类型的实例zw。后续通过这里实例调用Write方法写入的数据都会被进行压缩处理并写入文件实例。zw.Close方法调用会将压缩变换后的数据刷新到文件实例中。
 
@@ -1682,7 +1696,19 @@ func SetIcon(iconBytes []byte) {    // 转换成一个C char类型    cstr := (*
 
 >> （2）高效类型转换
 使用unsafe包，Gopher可以绕开Go类型系统的安全检查，因此可以通过unsafe包实现性能更好的类型转换。最常见的类型转换是string与[]byte类型间的相互转换：
-func Bytes2String(b []byte) string {    return *(*string)(unsafe.Pointer(&b))}func String2Bytes(s string) []byte {    sh := (*reflect.StringHeader)(unsafe.Pointer(&s))    bh := reflect.SliceHeader{        Data: sh.Data,        Len:  sh.Len,        Cap:  sh.Len,    }    return *(*[]byte)(unsafe.Pointer(&bh))}
+func Bytes2String(b []byte) string {
+	return *(*string)(
+		unsafe.Pointer(&b))
+}
+func String2Bytes(s string) []byte {
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := reflect.SliceHeader{
+		Data: sh.Data,
+		Len:  sh.Len,
+		Cap:  sh.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&bh))
+}
 
 >> 在Go中，string类型变量是不可变的（immutable），通过常规方法将一个string类型变量转换为[]byte类型，Go会为[]byte类型变量分配一块新内存，并将string类型变量的值复制到这块新内存中。而通过上面基于unsafe包实现的String2Bytes函数，这种转换并不需要额外的内存复制：转换后的[]byte变量与输入参数中的string类型变量共享底层存储（但注意，我们依旧无法通过对返回的切片的修改来改变原字符串）。而将[]byte变量转换为string类型则更为简单，因为[]byte的内部表示是一个三元组(ptr, len, cap)，string的内部表示为一个二元组(ptr, len)，通过unsafe.Pointer将[]byte的内部表示重新解释为string的内部表示，这就是Bytes2String的原理。
 此外unsafe在自定义高性能序列化函数（marshal）、原子操作（atomic）及内存操作（指针运算）上都有一定程度的应用。
@@ -2894,7 +2920,38 @@ $go run goroutine_4.gomain goroutine: start to work...goroutine2: start to work.
 我们看到goroutine2的panic导致goroutine1和main goroutine尚未完成处理就因进程退出而停止了。这个“坑”带来的危害是极大的，你能想象出一个服务端守护程序的进程运行着运行着就消失了的情况吗？同时，由于goroutine的轻量特质，开发者可以在任何代码中随意启动一个goroutine，因此你无法保证你的程序依赖的第三方包中是否启动了存在panic可能性的goroutine，这就像是一颗定时炸弹，随时可能被引爆。
 
 >> 那么如何避免呢？没有好办法，只能采用防御型代码，即在每个goroutine的启动函数中加上对panic的捕获逻辑。对上面的示例的改造如下：
-// chapter10/sources/go-trap/goroutine_5.gofunc safeRun(g func()) {    defer func() {        if e := recover(); e != nil {            fmt.Println("caught a panic:", e)        }    }()    g()}func main() {    var wg sync.WaitGroup    wg.Add(2)    println("main goroutine: start to work...")    go safeRun(func() {        defer wg.Done()        println("goroutine1: start to work...")        time.Sleep(5 * time.Second)        println("goroutine1: work done!")    })    go safeRun(func() {        defer wg.Done()        println("goroutine2: start to work...")        time.Sleep(1 * time.Second)        panic("division by zero")        println("goroutine2: work done!")    })    wg.Wait()    println("main goroutine: work done!")}
+// chapter10/sources/go-trap/goroutine_5.go
+
+func safeRun(g func()) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println("caught a panic:", e)
+		}
+	}()
+	g()
+}
+func main() {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	println("main goroutine: start to work...")
+	go safeRun(func() {
+		defer wg.Done()
+		println("goroutine1: start to work...")
+		time.Sleep(5 * time.Second)
+		println("goroutine1: work done!")
+	})
+	go safeRun(func() {
+		defer wg.Done()
+		println("goroutine2: start to work...")
+		time.Sleep(1 * time.Second)
+		panic("division by zero")
+		println("goroutine2: work done!")
+	})
+	wg.Wait()
+	println("main goroutine: work done!")
+}
+
+
 运行该示例：
 $go run goroutine_5.gomain goroutine: start to work...goroutine2: start to work...goroutine1: start to work...caught a panic: division by zerogoroutine1: work done!main goroutine: work done!
 我们看到goroutine2抛出的panic被safeRun函数捕获，这样panicking过程终止，main goroutine和goroutine1才能得以“善终”。
@@ -2992,9 +3049,28 @@ $echo "aGVsbG8sIGdv" | base64 -Dhello, go
 
 >> （1）http包需要我们手动关闭Response.Body
 通过http包我们很容易实现一个HTTP客户端，比如：
-// chapter10/sources/go-trap/http_1.gofunc main() {    resp, err := http.Get("https://tip.golang.org")    if err != nil {        fmt.Println(err)        return    }    body, err := ioutil.ReadAll(resp.Body)    if err != nil {        fmt.Println(err)        return    }    fmt.Println(string(body))}
+// chapter10/sources/go-trap/http_1.go
+func main() {    
+	resp, err := http.Get("https://tip.golang.org")    
+	if err != nil {        
+		fmt.Println(err)        
+		return    
+	}    
+	body, err := ioutil.ReadAll(resp.Body)    
+	if err != nil {        
+		fmt.Println(err)        
+		return    
+	}    
+	fmt.Println(string(body))
+}
 这个示例通过http.Get获取某个网站的页面内容，然后读取应答Body字段中的数据并输出到命令行控制台上。但仅仅这么做还不够，因为http包需要我们配合完成一项任务：务必关闭resp.Body。
-// chapter10/sources/go-trap/http_1.goresp, err := http.Get("https://tip.golang.org")if err != nil {    fmt.Println(err)    return}defer resp.Body.Close()
+// chapter10/sources/go-trap/http_1.go
+resp, err := http.Get("https://tip.golang.org")
+if err != nil {    
+	fmt.Println(err)    
+	return
+}
+defer resp.Body.Close()
 目前http包的实现逻辑是只有当应答的Body中的内容被全部读取完毕且调用了Body.Close()，默认的HTTP客户端才会重用带有keep-alive标志的HTTP连接，否则每次HTTP客户端发起请求都会单独向服务端建立一条新的TCP连接，这样做的消耗要比重用连接大得多。
 注：仅在作为客户端时，http包才需要我们手动关闭Response.Body；如果是作为服务端，http包会自动处理Request.Body。
 
