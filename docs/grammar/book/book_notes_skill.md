@@ -1996,13 +1996,583 @@ func ExampleSendMailWithDisclaimer() {
 + 接口MailSender将SendMailWithDisclaimer与具体的Email发送实现之间的耦合解开。通过上述例子我们也可以看出接口在测试过程中成为fake对象或mock对象的注入点。通过这种方式，我们可以通过灵活定制接口实现者以控制实现行为，继而实现对被测代码的代码逻辑的测试覆盖。小结代码的可测试性已经成为判定Go代码是否优秀的一条重要标准。适当抽取接口，让接口成为好代码与单元测试之间的桥梁是Go语言的一种最佳实践。
 
 
+# 第六部分 并发编程
+
+## 第31条 优先考虑并发设计
+
++ 优先考虑并发设计并发不是并行，并发关乎结构，并行关乎执行。——Rob Pike，Go语言之父
+
+Go语言的设计哲学之一是“原生并发，轻量高效”
+
+### 31.2 Go并发设计实例
+
+写得很好!!!!
+
+3. 第三版：并发方案
+
+>> 假设机场鉴于现有建设规模，最大只能开通三条安检通道。机场旅客量依旧在增多，即便使用了并行方案，旅客的安检时长也无法再缩短。因为原安检程序采用的是顺序设计，即便机场目前有充足的人手（计算资源）可用，每个安检通道也只能用到一名工作人员。也就是说，原安检程序无法很好地适应工作人员（计算资源）的增加，是时候调整应用的结构了。
+原先的安检程序（顺序设计）弊端很明显：当工作人员（计算资源）处于某一个检查环节（如人身检查），其他两个环节便处于“等待”状态。一条很显然的改进思路是让这些环节“同时”运行起来，就像流水线一样，这就是并发（见图31-5）。
+
+## 第32条 了解goroutine的调度原理
+### 32.1 goroutine调度器
+### 32.2 goroutine调度模型与演进过程
+
+1. G-M模型
+2. G-P-M模型
+### 32.3 对goroutine调度器原理的进一步理解
+### 32.4 调度器状态的查看方法
+### 32.4 调度器状态的查看方法
+
+
++ Go提供了调度器当前状态的查看方法：使用Go运行时环境变量GODEBUG。
+
++ 给GODEBUG传入了"schedtrace=1000"，其含义就是每1000ms打印输出一次goroutine调度器的状态，每次一行。
+
+` SCHED 6016ms: gomaxprocs=4 idleprocs=0 threads=26 spinningthreads=0 idlethreads=20 runqueue=1 [3 4 0 10]`
+
+•  SCHED：调试信息输出标志字符串，代表本行是goroutine调度器相关信息的输出。
+•  6016ms：从程序启动到输出这行日志经过的时间。
+•  gomaxprocs：P的数量。
+•  idleprocs：处于空闲状态的P的数量。通过gomaxprocs和idleprocs的差值，我们就可以知道当前正在执行Go代码的P的数量。
+•  threads：操作系统线程的数量，包含调度器使用的M数量，加上运行时自用的类似sysmon这样的线程的数量。
+•  spinningthreads：处于自旋（spin）状态的操作系统数量。
+•  idlethread：处于空闲状态的操作系统线程的数量。
+•  runqueue=1：Go调度器全局运行队列中G的数量。
+•  [3 4 0 10]：分别为4个P的本地运行队列中的G的数量。
+
++ 还可以输出每个goroutine、M和P的详细调度信息（对于Gopher来说，在大多数情况下这是不必要的）：
+`$ GODEBUG=schedtrace=1000,scheddetail=1 godoc -http=:6060`
+
++  关于Go调度器调试信息输出的详细信息，可以参考Dmitry Vyukov的文章 “ Debugging Performance Issues in Go Programs”[1]，这也应该是每个Gopher必读的经典文章。更详尽的信息可参考$GOROOT/src/runtime/proc.go中schedtrace函数的实现。
+
+`[1]https://software.intel.com/en-us/blogs/2014/05/10/debugging-performance-issues-in-go-programs`
 
 
 
+### 32.5 goroutine调度实例简要分析
+
+
++ 3）反转：如何在GOMAXPROCS=1的情况下让main goroutine得到调度？
+
+```go
+>> // chapter6/sources/go-scheduler-model-case3.go 
+func add(a, b int) int {    
+	return a + b
+}
+func deadloop() {    
+	for {        
+		add(3, 5)    
+	}
+}
+func main() {    
+	runtime.GOMAXPROCS(1)    
+	go deadloop()    
+	for {        
+		time.Sleep(time.Second * 1)        
+		fmt.Println("I got scheduled!")    
+	}
+}
+```
+
++ 查看Go程序的汇编代码有多种方法。
+•  使用objdump工具：objdump -S go二进制文件。
+•  使用gdb disassemble。
+•  使用go tool工具生成汇编代码文件：go build -gcflags '-S ' xx.go > xx.s 2>&1。
+
++ •  将Go代码编译成汇编代码：go tool compile -S xx.go > xx.s。
+•  使用go tool工具反编译Go程序：go tool objdump -S go-binary > xx.s。
+
++ 这里使用最后一种方法：利用go tool objdump反编译（并结合其他输出的汇编形式）。
+$go build -o go-scheduler-model-case3 go-scheduler-model-case3.go$go tool objdump -S go-scheduler-model-case3 > go-scheduler-model-case3.s
+
++ deadloop中对add函数的调用并未出现。这显然是Go编译器在生成代码时执行了内联（inline）优化的结果，因为add的调用对deadloop的行为结果没有任何影响。
 
 
 
+## 第33条 掌握Go并发模型和常见并发模式
+
++ 不要通过共享内存来通信，而应该通过通信来共享内存。
+——Rob Pike，Go语言之父
+
+### 33.1 Go并发模型
+
++ 传统语言的并发模型是基于共享内存的模型
+
++ 在新并发模型设计中借鉴了著名计算机科学家Tony Hoare提出的CSP（Communicating Sequential Process，通信顺序进程）模型
+
++ 虽然CSP模型已经成为Go语言支持的主流并发模型，但Go也支持传统的基于共享内存的并发模型，并提供基本的低级同步原语（主要是sync包中的互斥锁、条件变量、读写锁、原子操作等）。
+
++ Go始终推荐以CSP模型风格构建并发程序，尤其是在复杂的业务层面。这将提升程序逻辑的清晰度，大大降低并发设计的复杂性，并让程序更具可读性和可维护性；对于局部情况，比如涉及性能敏感的区域或需要保护的结构体数据，可以使用更为高效的低级同步原语（如sync.Mutex），以保证goroutine对数据的同步访问。
+
+### 33.2 Go常见的并发模式 !!!!!
+
++ 在语言层面，Go针对CSP模型提供了三种并发原语。
+•  goroutine：对应CSP模型中的P，封装了数据的处理逻辑，是Go运行时调度的基本执行单元。
+•  channel：对应CSP模型中的输入/输出原语，用于goroutine之间的通信和同步。
+•  select：用于应对多路输入/输出，可以让goroutine同时协调处理多个channel操作。
+
+1. 创建模式
+Go语言使用go关键字+函数/方法创建goroutine
+
++ 但在稍复杂一些的并发程序中，需要考虑通过CSP模型输入/输出原语的承载体channel在goroutine之间建立联系。为了满足这一需求，我们通常使用下面的方式来创建goroutine：
+```go
+type T struct {...}
+func spawn(f func()) chan T {    
+	c := make(chan T)    
+	go func() {        
+		// 使用channel变量c(通过闭包方式)与调用spawn的goroutine通信        ...        
+		f()        ...    
+	}()        
+	return c
+}
+func main() {    
+	c := spawn(func(){})    // 使用channel变量c与新创建的goroutine通信
+}
+```
+
+2. 退出模式
+（1）分离模式
+这里借鉴了一些线程模型中的术语，比如分离（detached）模式。分离模式是使用最为广泛的goroutine退出模式。对于分离的goroutine，创建它的goroutine不需要关心它的退出，这类goroutine在启动后即与其创建者彻底分离，其生命周期与其执行的主函数相关，函数返回即goroutine退出。这类goroutine有两个常见用途。
+1）一次性任务：顾名思义，新创建的goroutine用来执行一个简单的任务，执行后即退出。比如下面标准库中的代码
+2）常驻后台执行一些特定任务，如监视（monitor）、观察（watch）等。其实现通常采用for {...}或for { select{...} }代码段形式，并多以定时器（timer）或事件（event）驱动执行。
+Go为每个goroutine调度模型中的P内置的GC goroutine就是这种类型的
+
+(2）join模式
+在Go中，我们有时候也有类似的需求：goroutine的创建者需要等待新goroutine结束。笔者为这样的goroutine退出模式起名为“join模式”
+① 等待一个goroutine退出
+② 获取goroutine的退出状态
+③ 等待多个goroutine退出
+通过Go语言提供的sync.WaitGroup实现等待多个goroutine退出的模式
+④ 支持超时机制的等待
+
+(3）notify-and-wait模式
+① 通知并等待一个goroutine退出
+② 通知并等待多个goroutine退出
+
+（4）退出模式的应用
+聚焦在实现一个“超时等待退出”框架，以统一解决各种运行形态goroutine的优雅退出问题。
+
+3. 管道模式
+
++ Go中管道模式被实现成了由channel连接的一条“数据流水线”。在该流水线中，每个数据处理环节都由一组功能相同的goroutine完成。在每个数据处理环节，goroutine都要从数据输入channel获取前一个环节生产的数据，然后对这些数据进行处理，并将处理后的结果数据通过数据输出channel发往下一个环节。
+
++ 两种基于管道模式的扩展模式。
+（1）扇出模式
+
+>> 在某个处理环节，多个功能相同的goroutine从同一个channel读取数据并处理，直到该channel关闭，这种情况被称为“扇出”（fan-out）。使用扇出模式可以在一组goroutine中均衡分配工作量，从而更均衡地利用CPU。
+
+>> （2）扇入模式
+在某个处理环节，处理程序面对不止一个输入channel。我们把所有输入channel的数据汇聚到一个统一的输入channel，然后处理程序再从这个channel中读取数据并处理，直到该channel因所有输入channel关闭而关闭。这种情况被称为“扇入”（fan-in）。
+
+4. 超时与取消模式
+
+编写一个从气象数据服务中心获取气象信息的客户端。该客户端每次会并发向三个气象数据服务中心发起数据查询请求，并以最快返回的那个响应信息作为此次请求的应答返回值。
+
+```go
+// chapter6/sources/go-concurrency-pattern-12.go 
+type result struct {    
+	value string
+}
+func first(servers ...*httptest.Server) (result, error) {    
+	c := make(chan result)    
+	ctx, cancel := context.WithCancel(context.Background())    
+	defer cancel()    
+	queryFunc := func(i int, server *httptest.Server) {        
+		url := server.URL        
+		req, err := http.NewRequest("GET", url, nil)        
+		if err != nil {            
+			log.Printf("query goroutine-%d: http NewRequest error: %s\n", i, err)            
+			return        
+		}        
+		req = req.WithContext(ctx)                
+		log.Printf("query goroutine-%d: send request...\n", i)        
+		resp, err := http.DefaultClient.Do(req)        
+		if err != nil {            
+			log.Printf("query goroutine-%d: get return error: %s\n", i, err)            
+			return        
+		}        
+		log.Printf("query goroutine-%d: get response\n", i)        
+		defer resp.Body.Close()        
+		body, _ := ioutil.ReadAll(resp.Body)                
+		c <- result{            
+			value: string(body),        
+		}        
+		return    
+	}        
+	for i, serv := range servers {        
+		go queryFunc(i, serv)    
+	}        
+	select {    
+		case r := <-c:        return r, nil    
+		case <-time.After(500 * time.Millisecond):        return result{}, errors.New("timeout")    
+	}
+}
+func fakeWeatherServer(name string, interval int) *httptest.Server {    
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,         r *http.Request) {        
+		log.Printf("%s receive a http request\n", name)        
+		time.Sleep(time.Duration(interval) * time.Millisecond)        
+		w.Write([]byte(name + ":ok"))    
+	}))
+}
+func main() {    
+	result, err := first(fakeWeatherServer("open-weather-1", 200),        fakeWeatherServer("open-weather-2", 1000),        
+	fakeWeatherServer("open-weather-3", 600))    
+	if err != nil {        
+		log.Println("invoke first error:", err)        
+		return    
+	}        
+	fmt.Println(result)    
+	time.Sleep(10 * time.Second)
+}
+```
++ 在这版实现中，我们利用context.WithCancel创建了一个可以取消的context.Context变量，在每个发起查询请求的goroutine中，我们用该变量更新了request中的ctx变量，使其支持被取消。这样在first函数中，无论是成功得到某个查询goroutine的返回结果，还是超时失败返回，通过defer cancel()设定cancel函数在first函数返回前被执行，那些尚未返回的在途（on-flight）查询的goroutine都将收到cancel事件并退出（http包支持利用context.Context的超时和cancel机制）。
+
+### 本条要点：
+•  了解基于CSP的并发模型与传统基于共享内存的并发模型的区别；
+•  了解Go为实现CSP模型而提供的并发原语及功能；
+•  掌握常见的并发模式，包括创建模式、多种退出模式、管道模式、超时和取消模式等。
+
+## 第34条 了解channel的妙用 !!!!!
++ channel是Go语言提供的一种重要的并发原语。从前文中我们了解到，它在Go语言的CSP模型中扮演着重要的角色：既可以实现goroutine间的通信，又可以实现goroutine间的同步。
+
+### 34.1 无缓冲channel
+
++ 无缓冲channel兼具通信和同步特性，在并发程序中应用颇为广泛。
+
++ 对于无缓冲channel而言，我们得到以下结论：
+•  发送动作一定发生在接收动作完成之前；
+•  接收动作一定发生在发送动作完成之前。
+
+1. 用作信号传递
+
+（1）一对一通知信号
+（2）一对多通知信号
+
+2. 用于替代锁机制
+
++ 无缓冲channel具有同步特性，这让它在某些场合可以替代锁，从而使得程序更加清晰，可读性更好。
+
+### 34.2 带缓冲channel
+
+1. 用作消息队列
+
+（2）多收多发性能基准测试
+
+2. 用作计数信号量
+3. len(channel)的应用
+
++ 如果s是chan T类型，那么len(s)针对channel的类型不同，有如下两种语义：
+◦  当s为无缓冲channel时，len(s)总是返回0；
+◦  当s为带缓冲channel时，len(s)返回当前channel s中尚未被读取的元素个数。
+
++ 为了不阻塞在channel上，常见的方法是将判空与读取放在一个事务中，将判满与写入放在一个事务中，而这类事务我们可以通过select实现。
+
+### 34.3 nil channel的妙用
++  对没有初始化的channel（nil channel）进行读写操作将会发生阻塞
++ 但nil channel并非一无是处，有些时候妙用nil channel可以达到事半功倍的效果。
+
+```go
+// chapter6/sources/go-channel-case-10.go 
+func main() {    
+	c1, c2 := make(chan int), make(chan int)    
+	go func() {        
+		time.Sleep(time.Second * 5)        
+		c1 <- 5        
+		close(c1)    
+	}()        
+	go func() {        
+		time.Sleep(time.Second * 7)        
+		c2 <- 7        
+		close(c2)    
+	}()        
+	for {        
+		select {        
+			case x, ok := <-c1:            
+			if !ok {                
+				c1 = nil            
+			} else {                
+				fmt.Println(x)            
+			}        
+			case x, ok := <-c2:                
+			if !ok {                    
+				c2 = nil                
+			} else {                    
+				fmt.Println(x)                
+			}        
+		}        
+		if c1 == nil && c2 == nil {            
+			break        
+		}    
+	}    
+	fmt.Println("program end")
+}
+```
+改进后的示例程序的最关键变化是在判断c1或c2被关闭后，显式地将c1或c2置为nil。我们知道，对一个nil channel执行获取操作，该操作将被阻塞，因此已经被置为nil的c1或c2的分支将再也不会被select选中执行。
+
+### 34.4 与select结合使用的一些惯用法
+
+1. 利用default分支避免阻塞select语句的default分支的语义是在其他分支均因通信未就绪而无法被选择的时候执行，这就为default分支赋予了一种“避免阻塞”的特性
+2. 实现超时机制
+
++ 带超时机制的select是Go语言中一种常见的select和channel的组合用法，通过超时事件，我们既可以避免长期陷入某种操作的等待中，也可以做一些异常处理工作。下面的示例代码实现了一次具有30s超时的select：
+```go
+func worker() {    
+	select {    
+		case <-c:        // ...    
+		case <-time.After(30 *time.Second):        
+		return    
+	}
+}
+```
+3. 实现心跳机制结合time包的Ticker，我们可以实现带有心跳机制的select。这种机制使我们可以在监听channel的同时，执行一些周期性的任务
+
+### 小结
+Go channel就像Go并发模型中的“胶水”，它将诸多并发执行单元连接起来，或者正是因为有channel的存在，Go并发模型才能迸发出强大的表达能力。
+
+### 本条要点：
+了解Go并发原语channel和select的基本语义；掌握无缓冲channel在信号传递、替代锁同步场景下的应用模式；掌握带缓冲channel在消息队列、计数信号量场景下的应用模式，了解在特定场景下利用len函数侦测带缓冲channel的状态；了解nil channel在特定场景下的用途；掌握select与channel结合使用的一些惯用法及注意事项。
+
+## 第35条 了解sync包的正确用法
+
++ Go语言在提供CSP并发模型原语的同时，还通过标准库的sync包提供了针对传统基于共享内存并发模型的基本同步原语，包括互斥锁（sync.Mutex）、读写锁（sync.RWMutex）、条件变量（sync.Cond）等。
+
+### 35.1 sync包还是channel
+
++ Go语言提倡“不要通过共享内存来通信，而应该通过通信来共享内存”。
+
+（1）需要高性能的临界区同步机制场景
+
+（2）不想转移结构体对象所有权，但又要保证结构体内部状态数据的同步访问的场景基于channel的并发设计的一个特点是，在goroutine间通过channel转移数据对象的所有权。只有拥有数据对象所有权（从channel接收到该数据）的goroutine才可以对该数据对象进行状态变更。如果你的设计中没有转移结构体对象所有权，但又要保证结构体内部状态数据能在多个goroutine之间同步访问，那么你可以使用sync包提供的低级同步原语来实现，比如最常用的sync.Mutex。
+
+### 35.2 使用sync包的注意事项
+
++ 在$GOROOT/src/sync/mutex.go文件中，我们看到这样一行关于使用sync包的注意事项：// Values containing the types defined in this package should not be copied.// 不应复制那些包含了此包中类型的值在sync包的其他源文件中，我们还会看到如下的一些注释：// $GOROOT/src/sync/mutex.go// A Mutex must not be copied after first use. (禁止复制首次使用后的Mutex)// $GOROOT/src/sync/rwmutex.go// A RWMutex must not be copied after first use.(禁止复制首次使用后的RWMutex)// $GOROOT/src/sync/cond.go// A Cond must not be copied after first use.(禁止复制首次使用后的Cond)...
+
++ 通过上述示例我们直观地看到，那些sync包中类型的实例在首次使用后被复制得到的副本一旦再被使用将导致不可预期的结果，为此在使用sync包中类型时，推荐通过闭包方式或传递类型实例（或包裹该类型的类型实例）的地址或指针的方式进行，这是使用sync包最值得注意的事项。
+
+### 35.3 互斥锁还是读写锁
+
++ sync包提供了两种用于临界区同步的原语：互斥锁（Mutex）和读写锁（RWMutex）。互斥锁是临界区同步原语的首选，它常被用来对结构体对象的内部状态、缓存等进行保护，是使用最为广泛的临界区同步原语。
+
+•  在并发量较小的情况下，互斥锁性能更好；随着并发量增大，互斥锁的竞争激烈，导致加锁和解锁性能下降。
+•  读写锁的读锁性能并未随并发量的增大而发生较大变化，性能始终恒定在40ns左右。
+•  在并发量较大的情况下，读写锁的写锁性能比互斥锁、读写锁的读锁都差，并且随着并发量增大，其写锁性能有继续下降的趋势。
+
++ 读写锁适合应用在具有一定并发量且读多写少的场合
+
+### 35.4 条件变量
+
++ sync.Cond是传统的条件变量原语概念在Go语言中的实现。一个条件变量可以理解为一个容器，这个容器中存放着一个或一组等待着某个条件成立的goroutine。当条件成立时，这些处于等待状态的goroutine将得到通知并被唤醒以继续后续的工作。这与百米飞人大战赛场上各位运动员等待裁判员的发令枪声十分类似。
+
+### 35.5 使用sync.Once实现单例模式
+
++ 程序运行期间只被执行一次且goroutine安全的函数只有每个包的init函数。sync包提供了另一种更为灵活的机制，可以保证任意一个函数在程序运行期间只被执行一次，这就是sync.Once。
+
++ 在Go标准库中，sync.Once的“仅执行一次”语义被一些包用于初始化和资源清理的过程中，以避免重复执行初始化或资源关闭操作。
+
+## 35.6 使用sync.Pool减轻垃圾回收压力 !!!
+
+•  它是goroutine并发安全的，可以被多个goroutine同时使用；
+•  放入该缓存池中的数据对象的生命是暂时的，随时都可能被垃圾回收掉；
+•  缓存池中的数据对象是可以重复利用的，这样可以在一定程度上降低数据对象重新分配的频度，减轻GC的压力；
+•  sync.Pool为每个P（goroutine调度模型中的P）单独建立一个local缓存池，进一步降低高并发下对锁的争抢。
+
+（1）限制要放回缓存池中的数据对象大小
+
+（2）建立多级缓存池
+
+### 本条要点：
+•  明确sync包中原语应用的适用场景；
+•  sync包内定义的结构体或包含这些类型的结构体在首次使用后禁止复制；
+•  明确sync.RWMutex的适用场景；
+•  掌握条件变量的应用场景和使用方法；
+•  实现单例模式时优先考虑sync.Once；
+•  了解sync.Pool的优点、使用中可能遇到的问题及解决方法。
+
+## 第36条 使用atomic包实现伸缩性更好的并发读取
 
 
+### 36.1 atomic包与原子操作
+
++ atomic包封装了CPU实现的部分原子操作指令，为用户层提供体验良好的原子操作函数，因此atomic包中提供的原语更接近硬件底层，也更为低级，它常被用于实现更为高级的并发同步技术（比如channel和sync包中的同步原语）。
+
+## 36.2 对共享整型变量的无锁读写
+
++ atomic包提供了两大类原子操作接口：一类是针对整型变量的，包括有符号整型、无符号整型以及对应的指针类型；另一类是针对自定义类型的。第一类原子操作接口的存在让atomic包天然适合于实现某一个共享整型变量的并发同步。
+
+•  读写锁的性能随着并发量增大的变化情况与前面讲解sync.RWMutex时的一致；
+•  利用原子操作的无锁并发写的性能随着并发量增大几乎保持恒定；
+•  利用原子操作的无锁并发读的性能随着并发量增大有持续提升的趋势，并且性能约为读锁的200倍。
+
+### 36.3 对共享自定义类型变量的无锁读写
+
++ 我们再来看atomic包另一类函数的应用。如图36-2所示，atomic通过Value类型的装拆箱操作实现了对任意自定义类型的原子操作（Load和Store），从而实现对共享自定义类型变量无锁读写的支持。
+
+•  利用原子操作的无锁并发写的性能随着并发量的增大而小幅下降；
+•  利用原子操作的无锁并发读的性能随着并发量增大有持续提升的趋势，并且性能约为读锁的100倍。
 
 
+### 小结
+是时候揭晓答案了。由上面两类atomic包应用的例子可知，随着并发量提升，使用atomic实现的共享变量的并发读写性能表现更为稳定，尤其是原子读操作，这让atomic与sync包中的原语比起来表现出更好的伸缩性和更高的性能。由此可以看出atomic包更适合一些对性能十分敏感、并发量较大且读多写少的场合。
+但atomic原子操作可用来同步的范围有较大限制，仅是一个整型变量或自定义类型变量。如果要对一个复杂的临界区数据进行同步，那么首选依旧是sync包中的原语。
+
+# 第七部分 错误处理
+
+## 第37条 了解错误处理的4种策略 !!!
+
+### 37.1 构造错误值
+### 37.2 透明错误处理策略
+### 37.3 “哨兵”错误处理策略
+### 37.4 错误值类型检视策略
+### 37.5 错误行为特征检视策略
+
+### 小结
+Go社区中关于如何进行错误处理的讨论有很多，但唯一正确的结论是没有哪一种错误处理策略适用于所有项目或场合。综合上述的构造错误值方法及错误处理策略，请记住如下几点：
+•  尽量使用透明错误处理策略降低错误处理方与错误值构造方之间的耦合；
+•  如果可以通过错误值类型的特征进行错误检视，那么尽量使用错误行为特征检视策略；
+•  在上述两种策略无法实施的情况下，再用“哨兵”策略和错误值类型检视策略；
+•  在Go 1.13及后续版本中，尽量用errors.Is和errors.As方法替换原先的错误检视比较语句。
+
+
+## 第38条 尽量优化反复出现的if err != nil  !!!
+
+### 38.1 两种观点
+
+### 38.2 尽量优化
+
++ Lohuizen也对if err != nil的重复出现情况进行了研究。如图38-2所示，他发现代码所在栈帧越低（越接近于main函数栈帧），if err != nil就越不常见；反之，代码在栈中的位置越高（更接近于网络I/O操作或操作系统API调用），if err != nil就越常见
+
+### 38.3 优化思路
+1）改善代码的视觉呈现。
+1. 视觉扁平化
+2. 重构：减少if err != nil的重复次数
+3. check/handle风格化
++ panic和recover让函数调用的性能降低了约90%。因此，我们在使用这种方案优化重复代码前，需要全面了解这些约束。
+4. 封装：内置error状态
+
++ 这显然是消除if err != nil代码片段重复出现的理想方法。我们还是以CopyFile为例，看看使用这种“内置error状态”的新封装方法后，能得到什么样的代码：
+```go
+// chapter7/sources/go-if-error-check-optimize-3.go
+type FileCopier struct {    
+	w   *os.File    
+	r   *os.File    
+	err error
+}
+func (f *FileCopier) open(path string) (*os.File, error) {    
+	if f.err != nil {        
+		return nil, f.err    
+	}        
+	h, err := os.Open(path)    
+	if err != nil {        
+		f.err = err        
+		return nil, err    
+	}    
+	return h, nil
+}
+func (f *FileCopier) openSrc(path string) {    
+	if f.err != nil {        
+		return    
+	}        
+	f.r, f.err = f.open(path)    
+	return
+}
+func (f *FileCopier) createDst(path string) {    
+	if f.err != nil {        
+		return    
+	}        
+	f.w, f.err = os.Create(path)    
+	return
+}
+func (f *FileCopier) copy() {    
+	if f.err != nil {        
+		return    
+	}        
+	if _, err := io.Copy(f.w, f.r); err != nil {        
+		f.err = err    
+	}
+}
+
+func (f *FileCopier) CopyFile(src, dst string) error {    
+	if f.err != nil {        
+		return f.err    
+	}        
+	defer func() {        
+		if f.r != nil {            
+			f.r.Close()        
+		}        
+		if f.w != nil {            
+			f.w.Close()        
+		}        
+		if f.err != nil {            
+			if f.w != nil {                
+				os.Remove(dst)            
+			}        
+		}    
+	}()        
+	f.openSrc(src)    
+	f.createDst(dst)    
+	f.copy()    
+	return f.err
+}
+func main() {    
+	var fc FileCopier    
+	err := fc.CopyFile("foo.txt", "bar.txt")    
+	if err != nil {        
+		fmt.Println("copy file error:", err)        
+		return    
+	}    
+	fmt.Println("copy file ok")
+}
+```
+这次的重构很彻底。我们将原CopyFile函数彻底抛弃，而重新将其逻辑封装到一个名为FileCopier结构的CopyFile方法中。FileCopier结构内置了一个err字段用于保存内部的错误状态，这样在其CopyFile方法中，我们只需按照正常业务逻辑，顺序执行openSrc、createDst和copy即可，正常业务逻辑的视觉连续性就这样被很好地实现了。同时该CopyFile方法的复杂度因if检查的“大量缺席”而变得很低。
+
+### 小结
+Go显式错误处理的设计既有其优势，也有其编写冗长的不足，至今针对Go错误处理尚未形成一致的改进意见。我们能做的就是尽可能对反复出现的if err != nil进行优化，本条给出了若干优化思路。
+本条要点：
+•  使用显式错误结果和显式的错误检查是Go语言成功的重要因素，也是if err != nil反复出现的根本原因；
+•  了解关于改善Go错误处理的两种观点；
+•  了解减少甚至消除if err != nil代码片段的两个优化方向，即改善视觉呈现与降低复杂度；
+•  掌握错误处理代码优化的四种常见方法（位于三个不同象限中），并根据所处场景与约束灵活使用。
+
+## 第39条 不要使用panic进行正常的错误处理
+
++ Go的正常错误处理与异常处理之间是泾渭分明的，这与其他主流编程语言使用结构化错误处理统一处理错误与异常是两种不同的理念。Go提供了panic专门用于处理异常，而我们建议不要使用panic进行正常的错误处理。
+
+1. checked exception实质是错误，而panic是异常
+
++ 和Java中checked exception的“有意而为之”相反，在Go中，panic则是“不得已而为之”，即所有引发panic的情形，无论是显式的（我们主动调用panic函数引发的）还是隐式的（Go运行时检测到违法情况而引发的），都是我们不期望看到的。对这些引发的panic，我们很少有预案应对，更多的是让程序快速崩溃掉。因此一旦发生panic，就意味着我们的代码很大可能出现了bug。因此，Go中的panic更接近于Java的RuntimeException+Error，而不是checked exception。
+
+2. API调用者没有义务处理panic
+
+3. 未被捕获的panic意味着“游戏结束”
+
++ 综上，Go panic不应被当作Java的checked exception来进行正常的错误处理。使用错误 （error）和多返回值的显式错误处理方式才符合Go的错误处理哲学。
+
+>> [1]https://blog.golang.org/defer-panic-and-recover
+
+### 39.2 panic的典型应用
+
+1. 充当断言角色，提示潜在bug
+2. 用于简化错误处理控制结构
+3. 使用recover捕获panic，防止goroutine意外退出
+
+### 39.3 理解panic的输出信息 !!!
+
+
++ 关于发生panic后输出的栈跟踪信息（stack trace）的识别，总体可遵循以下几个要点。
+•  栈跟踪信息中每个函数/方法后面的“参数数值”个数与函数/方法原型的参数个数不是一一对应的。
+•  栈跟踪信息中每个函数/方法后面的“参数数值”是按照函数/方法原型参数列表中从左到右的参数类型的内存布局逐一展开的，每个数值占用一个字（word，64位平台下为8字节）。
+•  如果是方法，则第一个参数是receiver自身。如果receiver是指针类型，则第一个参数数值就是一个指针地址；如果是非指针的实例，则栈跟踪信息会按照其内存布局输出。
+•  函数/方法返回值放在栈跟踪信息的“参数数值”列表的后面；如果有多个返回值，则同样按从左到右的顺序，按照返回值类型的内存布局输出。
+•  指针类型参数：占用栈跟踪信息的“参数数值”列表的一个位置；数值表示指针值，也是指针指向的对象的地址。
+•  string类型参数：由于string在内存中由两个字表示（第一个字是数据指针，第二个字是string的长度），因此在栈跟踪信息的“参数数值”列表中将占用两个位置。
+•  slice类型参数：由于slice类型在内存中由三个字表示（第一个字是数据指针，第二个字是len，第三个字是cap），因此在栈跟踪信息的“参数数值”列表中将占用三个位置。
+•  内建整型（int、rune、byte）：由于按字逐个输出，对于类型长度不足一个字的参数，会进行合并处理。比如，一个函数有5个int16类型的参数，那么在栈跟踪信息中这5个参数将占用“参数数值”列表中的两个位置：第一个位置是前4个参数的“合体”，第二个位置则是最后那个int16类型的参数值。
+•  struct类型参数：会按照struct中字段的内存布局顺序在栈跟踪信息中展开。
+•  interface类型参数：由于interface类型在内存中由两部分组成（一部分是接口类型的参数指针，另一部分是接口值的参数指针），因此interface类型参数将使用“参数数值”列表中的两个位置。
+•  栈跟踪输出的信息是在函数调用过程中的“快照”信息，因此一些输出数值虽然看似不合理，但由于其并不是最终值，问题也不一定发生在它们身上，比如返回值参数
+
++ 在Go 1.11及以后版本中，Go编译器得到更深入的优化，很多简单的函数或方法会被自动内联（inline）。函数一旦内联化，我们就无法在栈跟踪信息中看到栈帧信息了，栈帧信息都变成了省略号
+
++ 要想看到栈跟踪信息中的栈帧数据，我们需要使用-gcflags="-l"来告诉编译器不要执行内联优化
+!!!!
