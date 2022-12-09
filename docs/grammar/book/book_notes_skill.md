@@ -2576,3 +2576,591 @@ Go显式错误处理的设计既有其优势，也有其编写冗长的不足，
 
 + 要想看到栈跟踪信息中的栈帧数据，我们需要使用-gcflags="-l"来告诉编译器不要执行内联优化
 !!!!
+
+
+# 第八部分 测试、性能剖析与调试
+
+## 第40条理解包内测试与包外测试的差别
+### 40.1　官方文档的“自相矛盾”
+### 40.2　包内测试与包外测试
+1. Go标准库中包内测试和包外测试的使用情况Go标准库是Go代码风格和惯用法一贯的风向标。
+2. 包内测试的优势与不足
+3. 包外测试（仅针对导出API的测试）
+4. 优先使用包外测试
+
+
+### 本条要点：
+go test执行测试的原理；理解包内测试的优点与不足；理解包外测试的优点与不足；掌握通过export_test.go为包外测试添加“后门”的惯用法；优先使用包外测试；当运用包外测试与包内测试共存的方式时，可考虑让包外测试和包内测试聚焦于不同的测试类别。
+
+## 第41条 有层次地组织测试代码
+
+### 41.1　经典模式——平铺
+
++ 平铺模式的测试代码组织方式的优点是显而易见的。简单：没有额外的抽象，上手容易。独立：每个测试函数都是独立的，互不关联，避免相互干扰。
+
+### 41.2　xUnit家族模式
+
++ go test的输出也更有层次感了，我们可以一眼看出对哪些函数/方法进行了测试、这些被测对象对应的测试套件以及套件中的每个测试用例。
+
+### 41.3　测试固件
+
++ 我们一般使用setUp和tearDown来代表测试固件的创建/设置与拆除/销毁的动作。
+
+### 41.3　测试固件
+
++ 我们一般使用setUp和tearDown来代表测试固件的创建/设置与拆除/销毁的动作。
+
++ Go 1.14版本testing包增加了testing.Cleanup方法，为测试固件的销毁提供了包级原生的支持：
+```go
+func setUp() func(){    ...    
+return func() {    }
+}
+func TestXxx(t *testing.T) {    
+    t.Cleanup(setUp())    ...
+}
+```
++ Go 1.4版本引入了TestMain，使得包级别测试固件的创建和销毁终于有了正式的施展舞台。
+
++ 平铺模式下的测试执行流有些时候，一些测试函数所需的测试固件是相同的，在平铺模式下为每个测试函数都单独创建/销毁一次测试固件就显得有些重复和冗余。在这样的情况下，我们可以尝试采用测试套件来减少测试固件的重复创建。
+
++ xUnit实践模式下的测试执行流小结在确定了将测试代码放入包内测试还是包外测试之后，我们在编写测试前，还要做好测试包内部测试代码的组织规划，建立起适合自己项目规模的测试代码层次体系。简单的测试可采用平铺模式，复杂的测试可借鉴xUnit的最佳实践，利用subtest建立包、测试套件、测试用例三级的测试代码组织形式，并利用TestMain和testing.Cleanup方法为各层次的测试代码建立测试固件。
+
+
+## 第42条 优先编写表驱动的测试
+
+### 42.1　Go测试代码的一般逻辑
+
++ 对测试失败与否的判断在于测试代码逻辑是否进入了包含Error/Errorf、Fatal/Fatalf等方法调用的代码分支。一旦进入这些分支，即代表该测试失败。不同的是Error/Errorf并不会立刻终止当前goroutine的执行，还会继续执行该goroutine后续的测试，而Fatal/Fatalf则会立刻停止当前goroutine的测试执行。
+### 42.2　表驱动的测试实践
+
++ 上面仅有三组预置输入数据的示例的测试代码已显得十分冗长，如果为测试预置的数据组数增多，测试函数本身就将变得十分庞大。并且，我们看到上述示例的测试逻辑中存在很多重复的代码，显得十分烦琐。我们来尝试对上述示例做一些改进：
+```go
+// chapter8/sources/table_driven_strings_test.go
+func TestCompare(t *testing.T) {    
+    compareTests := []struct {        
+        a, b string        
+        i    int    
+    }
+    {        
+        {"", "", 0},        
+        {"a", "", 1},        
+        {"", "a", -1},    
+    }    
+    for _, tt := range compareTests {        
+        cmp := strings.Compare(tt.a, tt.b)        
+        if cmp != tt.i {            
+            t.Errorf(`want %v, but Compare(%q, %q) = %v`, tt.i, tt.a, tt.b, cmp)        
+        }    
+    }
+```
+在上面这个改进的示例中，我们将之前示例中重复的测试逻辑合并为一个，并将预置的输入数据放入一个自定义结构体类型的切片中。这个示例的长度看似并没有比之前的实例缩减多少，但它却是一个可扩展的测试设计。
+
++  无须改动后面的测试逻辑，只需在切片中增加数据条目即可。在这种测试设计中，这个自定义结构体类型的切片（上述示例中的compareTests）就是一个表（自定义结构体类型的字段就是列），而基于这个数据表的测试设计和实现则被称为“表驱动的测试”。
+
+## 42.3　表驱动测试的优点
+
++ 表驱动测试本身是编程语言无关的。
+
+表驱动测试有着诸多优点。
+（1）简单和紧凑
+（2）数据即测试
+（3）结合子测试后，可单独运行某个数据项的测试
+
++ 我们将表驱动测试与子测试（subtest）结合来改造一下上面的strings_test示例：
+```go
+// chapter8/sources/table_driven_strings_with_subtest_test.go
+func TestCompare(t *testing.T) {    
+    compareTests := []struct {        
+        name, a, b string        
+        i          int    
+    }
+    {        
+        {`compareTwoEmptyString`, "", "", 0},        
+        {`compareSecondParamIsEmpty`, "a", "", 1},        
+        {`compareFirstParamIsEmpty`, "", "a", -1},    
+    }    
+    for _, tt := range compareTests {        
+        t.Run(tt.name, func(t *testing.T) {            
+            cmp := strings.Compare(tt.a, tt.b)            
+            if cmp != tt.i {                
+                t.Errorf(`want %v, but Compare(%q, %q) = %v`, tt.i, tt.a, tt.b, cmp)            
+            }        
+        })    
+    }
+}
+```
+
++ 我们将表驱动测试与子测试（subtest）结合来改造一下上面的strings_test示例：
+```go
+// chapter8/sources/table_driven_strings_with_subtest_test.go
+func TestCompare(t *testing.T) {    
+    compareTests := []struct {        
+        name, a, b string        
+        i          int    
+    }
+    {        
+        {`compareTwoEmptyString`, "", "", 0},        
+        {`compareSecondParamIsEmpty`, "a", "", 1},        
+        {`compareFirstParamIsEmpty`, "", "a", -1},    
+    }    
+    for _, tt := range compareTests {        
+        t.Run(tt.name, func(t *testing.T) {            
+            cmp := strings.Compare(tt.a, tt.b)            
+            if cmp != tt.i {                
+                t.Errorf(`want %v, but Compare(%q, %q) = %v`, tt.i, tt.a, tt.b, cmp)            
+            }        
+        })    
+    }
+}
+```
+
+### 42.4　表驱动测试实践中的注意事项
+
+1. 表的实现方式
+
++ 在上面的示例中，测试中使用的表是用自定义结构体的切片实现的，表也可以使用基于自定义结构体的其他集合类型（如map）来实现。我们将上面的例子改造为采用map来实现测试数据表
+
++ 为了在表测试驱动的测试中快速从输出的结果中定位导致测试失败的表项，我们需要在测试失败的输出结果中输出数据表项的唯一标识。
+最简单的方法是通过输出数据表项在数据表中的偏移量来辅助定位“元凶”
+
++ 另一个更直观的方式是使用名字来区分不同的数据项
+
+```go
+if cmp != tt.i {            
+    t.Errorf(`[%s] want %v, but Compare(%q, %q) = %v`, tt.name, tt.i, tt.a, tt.b, cmp)        
+}
+```
+
+3. Errorf还是Fatalf
+
++ 一般而言，如果一个数据项导致的测试失败不会对后续数据项的测试结果造成影响，那么推荐Errorf，这样可以通过执行一次测试看到所有导致测试失败的数据项；否则，如果数据项导致的测试失败会直接影响到后续数据项的测试结果，那么可以使用Fatalf让测试尽快结束，因为继续执行的测试的意义已经不大了。
+
+## 第43条使用testdata管理测试依赖的外部数据文件
+
++ 测试固件是Go测试执行所需的上下文环境，其中测试依赖的外部数据文件就是一种常见的测试固件（可以理解为静态测试固件，因为无须在测试代码中为其单独编写固件的创建和清理辅助函数）。
+
+### 43.1　testdata目录
+
++ Go语言规定：Go工具链将忽略名为testdata的目录。这样开发者在编写测试时，就可以在名为testdata的目录下存放和管理测试代码依赖的数据文件。而go test命令在执行时会将被测试程序包源码所在目录设置为其工作目录，这样如果要使用testdata目录下的某个数据文件，我们无须再处理各种恼人的路径问题，而可以直接在测试代码中像下面这样定位到充当测试固件的数据文件：
+`f, err := os.Open("testdata/data-001.txt")`
+
++ 差别（Windows下使用反斜线“\”，Linux/macOS下使用斜线“/”），使用下面的方式可以使测试代码更具可移植性：
+`f, err := os.Open(filepath.Join("testdata", "data-001.txt"))`
+
++ 我们还经常将预期结果数据保存在文件中并放置在testdata下，然后在测试代码中将被测对象输出的数据与这些预置在文件中的数据进行比较，一致则测试通过；反之，测试失败。
+
+### 43.2　golden文件惯用法
+
++ Go标准库为我们提供了一种惯用法：golden文件
+
+### 小结
++ 在这一条中，我们了解到面向工程的Go语言对测试依赖的外部数据文件的存放位置进行了规范，统一使用testdata目录，开发人员可以采用将预期数据文件放在testdata下的方式为测试提供静态测试固件。而Go golden文件的惯用法实现了testdata目录下测试依赖的预期结果数据文件的数据采集与测试代码的融合。
+
+## 第44条正确运用fake、stub和mock等辅助单元测试 !!!!
+
+### 44.1　fake：真实组件或服务的简化实现版替身
+
++ fake测试就是指采用真实组件或服务的简化版实现作为替身，以满足被测代码的外部依赖需求。
++ 使用fake替身进行测试的最常见理由是在测试环境无法构造被测代码所依赖的外部组件或服务，或者这些组件/服务有副作用。fake替身的实现也有两个极端：要么像标准库fakedb_test.go那样实现一个全功能的简化版内存数据库driver，要么像faketest1例子中那样针对被测代码的调用请求仅返回硬编码的成功或失败。这两种极端实现有一个共同点：并不具备在测试前对返回结果进行预设置的能力。这也是上面例子中我们针对成功和失败两个用例分别实现了一个替身的原因。（如果非要说成功和失败也是预设置的，那么fake替身的预设置能力也仅限于设置单一的返回值，即无论调用多少次，传入什么参数，返回值都是一个。）
+
+### 44.2　stub：对返回结果有一定预设控制能力的替身
+
++ stub也是一种替身概念，和fake替身相比，stub替身增强了对替身返回结果的间接控制能力，这种控制可以通过测试前对调用结果预设置来实现。不过，stub替身通常仅针对计划之内的结果进行设置，对计划之外的请求也无能为力。
+
++ 使用Go标准库net/http/httptest实现的用于测试的Web服务就可以作为一些被测对象所依赖外部服务的stub替身。
++ 在GitHub上有一个名为gostub（https://github.com/prashantv/gostub）的第三方包可以用于简化stub替身的管理和编写。
+
+### 44.3　mock：专用于行为观察和验证的替身
+
++ 和fake、stub替身相比，mock替身更为强大：它除了能提供测试前的预设置返回结果能力之外，还可以对mock替身对象在测试过程中的行为进行观察和验证。不过相比于前两种替身形式，mock存在应用局限（尤指在Go中）。
+
++  和前两种替身相比，mock的应用范围要窄很多，只用于实现某接口的实现类型的替身。
+◦  一般需要通过第三方框架实现mock替身。Go官方维护了一个mock框架——gomock（https://github.com/golang/mock），该框架通过代码生成的方式生成实现某接口的替身类型。
+
++ gomock是一个通用的mock框架，社区还有一些专用的mock框架可用于快速创建mock替身，比如：go-sqlmock（https://github.com/DATA-DOG/go-sqlmock）专门用于创建sql/driver包中的Driver接口实现的mock替身，可以帮助Gopher简单、快速地建立起对数据库操作相关方法的单元测试。
+
+### 小结
+本条介绍了当被测代码对外部组件或服务有强依赖时可以采用的测试方案，这些方案采用了相同的思路：为这些被依赖的外部组件或服务建立替身。这里介绍了三类替身以及它们的适用场合与注意事项。
+本条要点如下。
+◦  fake、stub、mock等替身概念之间并非泾渭分明的，对这些概念的理解容易混淆。比如标准库net/http/transfer_test.go文件中的mockTransferWriter类型，虽然其名字中带有mock，但实质上它更像是一个fake替身。
+◦  我们更多在包内测试应用上述替身概念辅助测试，这就意味着此类测试与被测代码是实现级别耦合的，这样的测试健壮性较差，一旦被测代码内部逻辑有变化，测试极容易失败。
+◦  通过fake、stub、mock等概念实现的替身参与的测试毕竟是在一个虚拟的“沙箱”环境中，不能代替与真实依赖连接的测试，因此，在集成测试或系统测试等使用真实外部组件或服务的测试阶段，务必包含与真实依赖的联测用例。
+◦  fake替身主要用于被测代码依赖组件或服务的简化实现。
+◦  stub替身具有有限范围的、在测试前预置返回结果的控制能力。
+◦  mock替身则专用于对替身的行为进行观察和验证的测试，一般用作Go接口类型的实现的替身。
+
+
+## 第45条使用模糊测试让潜在bug无处遁形
+
++ 模糊测试就是指半自动或自动地为程序提供非法的、非预期、随机的数据，并监控程序在这些输入数据下是否会出现崩溃、内置断言失败、内存泄露、安全漏洞等情况（见图45-1）。
+
+### 45.1　模糊测试在挖掘Go代码的潜在bug中的作用
+
+### 45.2　go-fuzz的初步工作原理
+
+### 45.3　go-fuzz使用方法
+
+### 小结
++ 通过这一条，我们认识到模糊测试对于提升Go代码质量、挖掘潜在bug的重要作用。但模糊测试不是“银弹”，它有其适用的范围。模糊测试最适合那些处理复杂输入数据的程序，比如文件格式解析、网络协议解析、人机交互界面入口等。模糊测试是软件测试技术的一个重要分支，与单元测试等互为补充，相辅相成。
+目前，并非所有编程语言都有对模糊测试工具的支持，Gopher和Go社区很幸运，Dmitry Vyukov为我们带来了go-fuzz模糊测试工具。如果你是追求高质量Go代码的开发者，请为你的Go代码建立起模糊测试。
+
+
+## 第46条为被测对象建立性能基准
+
++ 是否优化、何时优化实质上是一个决策问题，但决策不能靠直觉，要靠数据说话。借用上面名言中的句型：没有数据支撑的过早决策是万恶之源。
+
+### 46.1　性能基准测试在Go语言中是“一等公民”
+
++ 性能基准测试还可以通过传入-benchmem命令行参数输出内存分配信息（与基准测试代码中显式调用b.ReportAllocs的效果是等价的）
+
+` $go test -bench=Join ./benchmark_intro_test.go -benchmemgoos: darwingoarch: amd64BenchmarkConcatStringByJoin-8     23004709   48.8 ns/op   48 B/op     1 allocs/opPASSok         command-line-arguments 1.183s`
+
+这里输出的内存分配信息告诉我们，每执行一次concatStringByJoin平均进行一次内存分配，每次平均分配48字节的数据。
+
+### 46.2　顺序执行和并行执行的性能基准测试
+
++ 根据是否并行执行，Go的性能基准测试可以分为两类：顺序执行的性能基准测试和并行执行的性能基准测试。
+
+1. 顺序执行的性能基准测试
+2. 并行执行的性能基准测试
+
+```go
+func BenchmarkXxx(b *testing.B) {    
+    // ...    
+    b.RunParallel(func(pb *testing.PB) {        
+        for pb.Next() {            
+            // 被测对象的执行代码        
+        }    
+    }
+}
+```
+
+### 46.3　使用性能基准比较工具
+2. benchstat
+为了提高对性能基准数据比较的科学性，Go核心团队又开发了benchstat这款工具以替代benchcmp。
+
+### 46.4　排除额外干扰，让基准测试更精确
+
+### 小结
+无论你是否认为性能很重要，都请你为被测代码（尤其是位于系统关键业务路径上的代码）建立性能基准。如果你编写的是供其他人使用的软件包，则更应如此。只有这样，我们才能至少保证后续对代码的修改不会带来性能回退。已经建立的性能基准可以为后续是否进一步优化的决策提供数据支撑，而不是靠程序员的直觉。
+本条要点：
+◦  性能基准测试在Go语言中是“一等公民”，在Go中我们可以很容易为被测代码建立性能基准；
+◦  了解Go的两种性能基准测试的执行原理；
+◦  使用性能比较工具协助解读测试结果数据，优先使用benchstat工具；
+◦  使用testing.B提供的定时器操作方法排除额外干扰，让基准测试更精确，但不要在Run-Parallel中使用ResetTimer、StartTimer和StopTimer，因为它们具有全局副作用。
+
+
+## 第47条使用pprof对程序进行性能剖析 !!!!
+TODO
+
+## 第48条使用expvar输出度量数据，辅助定位性能瓶颈点
+
+### 小结
+在本条中，我们学习了如何使用Go标准库的expvar包输出应用程序内省数据来辅助定位应用性能瓶颈点。expvar包不仅可用于辅助缩小定位性能瓶颈的范围，还可以用来输出度量数据以对应用的运行状态进行监控，这样当程序出现问题时，我们可以快速发现问题并利用输出的度量数据对程序进行诊断并快速定位问题。
+
+### 本条要点：
+◦  将应用内部状态以度量指标数据的形式输出，可以帮助我们最大限度地缩小性能瓶颈的搜索范围并快速定位瓶颈点；
+◦  了解expvar包的工作原理；
+◦  使用expvar包提供的内置类型实现应用要输出的度量指标；
+◦  通过expvarmon等第三方工具快速展示应用内部状态信息。
+
+## 第49条使用Delve调试Go代码
+
+# 第九部分 标准库、反射与cgo
+
+## 第50条理解Go TCP Socket网络编程模型
+TODO
+
+### 小结
+在这一条中，我们学习了常见的网络I/O模型，了解了Go基于非阻塞Socket+I/O多路复用模型的网络编程模型的优点，包括降低通信复杂性，大幅减轻开发者的心智负担等，最后通过实例说明了在Go网络编程模型下，建立TCP连接、Socket读写（包括并发读写）、Socket属性设置及关闭连接的行为特点和注意事项。
+
+
+## 第51条使用net/http包实现安全通信
+
+### 小结
+在本条中，我们了解了如何利用Go标准库提供的net/http、crypto/tls及crypto/x509等包建立一条安全的HTTPS协议通信通道。
+
+### 本条要点：
+◦  了解HTTP协议的优点与不足；
+◦  了解HTTPS协议安全传输层的建立过程；
+◦  理解非对称加密体系以及数字证书的组成与功用；
+◦  数字证书就是使用CA私钥对证书申请者的公钥和证书相关信息进行签名后的满足标准证书格式的信息；
+◦  了解如何使用Go实现对服务端和客户端证书的双向校验。
+
+
+## 第52条掌握字符集的原理和字符编码方案间的转换
+
+### 小结
+在本条中，我们学习了Go默认字符集Unicode以及采用的编码方案UTF-8，深入理解了字符、字符集的属性——码点和内存编码表示（位模式）以及它们之间的关系，并通过实例讲解了如何利用Go标准库及扩展包实现不同字符编码方案间的转换。
+
+## 第53条掌握使用time包的正确方式
+### 53.3　定时器的使用 !!!!
+
+## 第54条不要忽略对系统信号的处理
+
+### 54.3　使用系统信号实现程序的优雅退出
+
++ 与优雅退出对立的是强制退出，也就是我们常说的使用kill -9，即kill -s SIGKILL pid。
+
+```go
+// chapter9/sources/go-signal/go-program-exit-gracefully-with-notify.go...
+func main() {    
+    var wg sync.WaitGroup    
+    http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {        
+        fmt.Fprintf(w, "Hello, Signal!\n")    
+    })    
+    var srv = http.Server{        
+        Addr: "localhost:8080",    
+    }    
+    srv.RegisterOnShutdown(func() {        
+        // 在一个单独的goroutine中执行        
+        fmt.Println("clean resources on shutdown...")        
+        time.Sleep(2 * time.Second)        
+        fmt.Println("clean resources ok")        
+        wg.Done()    
+    })    
+    wg.Add(2)    
+    go func() {        
+        quit := make(chan os.Signal, 1)        
+        signal.Notify(quit, syscall.SIGINT,           syscall.SIGTERM,           syscall.SIGQUIT,           syscall.SIGHUP)        
+        <-quit        
+        timeoutCtx, cf := context.WithTimeout(context.Background(),            time.Second*5)        
+        defer cf()        
+        var done = make(chan struct{}, 1)        
+        go func() {            
+            if err := srv.Shutdown(timeoutCtx); err != nil {                
+                fmt.Printf("web server shutdown error: %v", err)            
+            } else {                
+                fmt.Println("web server shutdown ok")            
+            }            
+            done <- struct{}{}            
+            wg.Done()        
+        }()        
+        select {        
+            case <-timeoutCtx.Done():            
+            fmt.Println("web server shutdown timeout")        
+            case <-done:        
+        }    
+    }()    
+    err := srv.ListenAndServe()    
+    if err != nil {        
+        if err != http.ErrServerClosed {            
+            fmt.Printf("web server start failed: %v\n", err)            return        
+        }    
+    }    
+    wg.Wait()    
+    fmt.Println("program exit ok")
+}
+```
+
+
+## 第55条使用crypto下的密码学包构建安全应用
+
+### 小结
+本条讲解了密码学中常用的几种工具以及在Go中对应的实现包与使用方法。
+◦  对称密码（分组密码）：解决数据机密性的问题。
+◦  公钥密码：解决密钥分发的问题。
+◦  单向散列函数：解决消息完整性检查问题。
+◦  消息认证码：可以识别伪装者。
+◦  数字签名：解决消息究竟是谁所发的问题，防止否认。
+◦  随机数：密码学建构的基础。
+
+## 第56条掌握bytes包和strings包的基本操作
+
+TODO
+
+## 第57条理解标准库的读写模型
+
+### 57.1　直接读写字节序列
+
++ 使用os.OpenFile创建并打开文件，传入的os.O_APPEND表示采用追加模式打开文件并写入数据
+
+### 57.2　直接读写抽象数据类型实例
+
+1. 利用fmt.Fscan和fmt.Fprint系列函数进行读写
+
+2. 利用binary.Read和binary.Write函数进行读写
+
+3. 利用gob包的Decode和Encode方法进行读写
+
+### 57.3　通过包裹类型读写数据
+
+### 小结
+抽象数据类型实例与字节序列间的编解码方案除了gob外，还可以使用标准库提供的json和xml等。鉴于篇幅有限，这里就不详细展开了。
+本条要点：
+◦  Go标准库的读写模型以io.Reader和io.Writer接口为中心；
+◦  模型既可以直接读写字节序列数据，也可以直接读写抽象数据类型实例；
+◦  本质上，抽象数据类型实例的读写也会被转换为字节序列，只不过这种转换由Go标准库的包代劳了；
+◦  通过包裹函数返回的包裹类型，我们可以轻松实现对读取或写入数据的缓冲、变换等处理。这种模式在标准库中有广泛应用。
+
+## 第58条掌握unsafe包的安全使用模式
+
+### 小结
+作为最初以系统编程语言为目标的语言，Go为了兼顾性能以及低级代码操作，在其安全类型的保护盾下开了一个“后门”。在大多数情况下，这是Go核心团队自用的机制。我们要想使用unsafe包，就必须遵循unsafe包，尤其是unsafe.Pointer的安全使用规则。
+本条要点：
+◦  Go语言在常规操作下是类型安全的，但使用unsafe包可以“刺透”Go的类型安全保护层；
+◦  Go兼容性并不包含对unsafe包的任何承诺，因此除非必要，尽量不要使用unsafe包，尤其是unsafe.Pointer；
+◦  uintptr仅仅是一个整型值，即便它存储的是内存对象的地址值，它对内存对象也起不到引用的作用；
+◦  使用unsafe包前，请先牢记并理解unsafe.Pointer的六条安全使用模式；
+◦  如果使用了unsafe包，请使用go vet等工具对代码进行unsafe包使用合规性的检查。
+
+## 第59条谨慎使用reflect包提供的反射能力
+
+TODO
+
+### 小结
+reflect包所提供的Go反射能力是一把“双刃剑”，它既可以被用于优雅地解决一类特定的问题，但也会带来逻辑不清晰、性能问题以及难于发现问题和调试等困惑。因此，我们应谨慎使用这种能力，在做出使用的决定之前，认真评估反射是不是问题的唯一解决方案；在确定要使用反射能力后，也要遵循上述三个反射法则的要求。
+
+## 第60条了解cgo的原理和使用开销
+
+# 第十部分 工具链与工程实践
+
+## 第61条使用module管理包依赖
+
+TODO
+
+## 第62条 构建最小Go程序容器镜像
+
+
+
+TODO
+
+## 第63条 自定义Go包的导入路径
+### 63.1　govanityurls
+### 63.2　使用govanityurls1. 安装govanityurls
+### 小结
+在这一条中，我们了解到自定义包导入路径具有诸多优点（如通过权威导入路径减少对包用户的影响、便于管理、路径简短等），并学习了一种基于govanityurls实现的自定义包导入路径的可行方案。该方案支持通过HTTPS访问并支持获取私有module。
+
+使用 https://github.com/goproxyio/goproxy.git 应该更好
+
+
+## 第64条 熟练掌握Go常用工具 !!!
+
+TODO
+
+### 64.3　构建
+
+1. -x -v：让构建过程一目了然
+-v用于输出当前正在编译的包，而-x则用于输出go build执行的每一个命令。
+
+go build执行命令的顺序大致如下：
+1）创建用于构建的临时目录；
+2）下载构建module s依赖的module t和u；
+3）分别编译module t和u，将编译后的结果存储到临时目录及GOCACHE目录下；
+4）编译module s；
+5）定位和汇总module s的各个依赖包构建后的目标文件（.a文件）的位置，形成importcfg.link文件，供后续链接器使用；
+6）链接成可执行文件；
+7）清理临时构建环境。
+
+## 第65条使用go generate驱动代码生成
+
+### 65.1　go generate：Go原生的代码生成“驱动器”
+
+### 小结
+go generate这个工具通常是由Go包的作者使用和执行的，其生成的Go源码一般会提交到代码仓库中，这个过程对生成的包的使用者来说是透明的。为了提醒使用者这是一个代码自动生成的源文件，我们通常会在源文件的开始处以注释的形式写入类似下面的文字：
+// Code generated by XXX. DO NOT EDIT.
+
+### 本条要点：
+◦  尽量使用Go原生的go generate驱动代码生成；
+◦  明确go generate应在go build、go run或go test等命令之前执行；
+◦  go generate不会按照Go语法解析源文件，它只是将Go源码文件当成普通文本读取并识别其中的go generate指示符；
+◦  go generate多用于生成枚举常量类型的String方法、protobuf文件对应的Go源文件，以及将静态资源文件数据嵌入二进制可执行文件中等场景；
+◦  go generate多数情况仅被Go包的作者使用，对Go包的使用者透明。
+
+## 第66条牢记Go的常见“陷阱” !!!
+1. 短变量声明相关的“坑”
+（1）短变量声明不总是会声明一个新变量
+（2）短变量声明会导致难于发现的变量遮蔽
+
+2. nil相关的“坑”
+
+（1）不是所有以nil作为零值的类型都是零值可用的
+这句话读起来有些拗口，我们可以将其分成两部分来理解。
+◦  以nil为零值的类型：根据Go语言规范，诸如切片（slice）、map、接口类型和指针类型的零值均为nil。
+◦  零值可用的类型：在第11条中，我们学习过什么是零值可用的类型，常见的有sync.Mutex和bytes.Buffer等。Go原生的切片类型只在特定使用方式下才可以被划到零值可用的范畴。
+
+（2）值为nil的接口类型变量并不总等于nil
+
+3. for range相关的“坑”
+
+（1）你得到的是序号值而不是元素值
+（2）针对string类型的for range迭代不是逐字节迭代
+（3）对map类型内元素的迭代顺序是随机的
+（4）在“复制品”上进行迭代
+（5）迭代变量是重用的
+
+4. 切片相关的“坑”
+
+（1）对内存的过多占用
+（2）隐匿数据的暴露与切片数据篡改
+（3）新切片与原切片底层存储可能会“分家”
+
+ 5. string相关的“坑”
+ 6. switch语句相关的“坑”
+ 7. goroutine相关的“坑”
+ （1）无法得到goroutine退出状态
+ （2）程序随着main goroutine退出而退出，不等待其他goroutine
+（3）任何一个goroutine出现panic，如果没有及时捕获，那么整个程序都将退出
+
++ 那么如何避免呢？没有好办法，只能采用防御型代码，即在每个goroutine的启动函数中加上对panic的捕获逻辑。对上面的示例的改造如下：
+```go
+// chapter10/sources/go-trap/goroutine_5.go
+
+func safeRun(g func()) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println("caught a panic:", e)
+		}
+	}()
+	g()
+}
+func main() {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	println("main goroutine: start to work...")
+	go safeRun(func() {
+		defer wg.Done()
+		println("goroutine1: start to work...")
+		time.Sleep(5 * time.Second)
+		println("goroutine1: work done!")
+	})
+	go safeRun(func() {
+		defer wg.Done()
+		println("goroutine2: start to work...")
+		time.Sleep(1 * time.Second)
+		panic("division by zero")
+		println("goroutine2: work done!")
+	})
+	wg.Wait()
+	println("main goroutine: work done!")
+}
+```
+
+8. channel相关的“坑”
+
++ 日常进行Go开发时，我们一般面对的都是有效状态（已初始化，尚未关闭）下的channel实例，但channel还有另外两种特殊状态：
+◦  零值channel（nil channel）；
+◦  已关闭的channel（closed channel）。
+Go新手面对这两种特殊状态下的channel极易掉入“坑”中。为了避免掉“坑”，建议牢记这两种状态下的channel行为特征，见表66-1。
+表66-1　两种特殊状态下的channel行为特征
+
+9. 方法相关的“坑”
+
+（1）使用值类型receiver的方法无法改变类型实例的状态
+Go语言的方法（method）很独特，除了参数和返回值，它还拥有一个代表着类型实例的receiver。receiver有两类：值类型receiver和指针类型receiver。而采用值类型receiver的方法无法改变类型实例的状态。
+
+（2）值类型实例可以调用采用指针类型receiver的方法，指针类型实例也可以调用采用值类型receiver的方法
+
+10. break语句相关的“坑”
+
+### 66.2　标准库类
+1. time包相关的“坑”
+2. encoding/json包相关的“坑”
+（1）未导出的结构体字段不会被编码到JSON文本中
+（2）nil切片和空切片可能被编码为不同文本
+（3）字节切片可能被编码为base64编码的文本
+（4）当JSON文本中的整型数值被解码为interface{}类型时，其底层真实类型为float64
+
+3. net/http包相关的“坑”
+（1）http包需要我们手动关闭Response.Body
+（2）HTTP客户端默认不会及时关闭已经用完的HTTP连接
