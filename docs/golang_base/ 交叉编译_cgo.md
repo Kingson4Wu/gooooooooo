@@ -74,3 +74,11 @@ cc1: all warnings being treated as errors
 如果用到CGO, 就不建议使用交叉编译. 自己用虚拟机搭一个编译环境. 在windows下即便交叉编译通过, copy到linux上,我也遇到过不能正常运行的情况.
 
 https://www.golangtc.com/t/568f7b02b09ecc72d5000013
+
+---
+
++ gox
+
+交叉编译工具，可以并行编译多个平台。
+
+参考：https://github.com/mitchellh/gox

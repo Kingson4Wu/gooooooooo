@@ -1,3 +1,15 @@
+### go语言圣经
+
++ 5.6.1. 警告：捕获迭代变量
+本节，将介绍Go词法作用域的一个陷阱。请务必仔细的阅读，弄清楚发生问题的原因。即使是经验丰富的程序员也会在这个问题上犯错误。
+考虑这样一个问题：你被要求首先创建一些目录，再将目录删除。在下面的例子中我们用函数值来完成删除操作。下面的示例代码需要引入os包。为了使代码简单，我们忽略了所有的异常处理。
+
++ 7.12. 通过类型断言询问行为
++ 下面这段逻辑和net/http包中web服务器负责写入HTTP头字段（例如："Content-type:text/html"）的部分相似。io.Writer接口类型的变量w代表HTTP响应；写入它的字节最终被发送到某个人的web浏览器上。
+
+
+### Go语言精进之路
+
 看到运行时实现转换的函数中已经加入了一些避免每种情况都要分配新内存操作的优化（如tmpBuf的复用）。
 
 // chapter4/sources/method_nature_3.gotype field struct {    name string}func (p *field) print() {    fmt.Println(p.name)}func main() {    data1 := []*field{{"one"}, {"two"}, {"three"}}    for _, v := range data1 {        go v.print()    }    data2 := []field{{"four"}, {"five"}, {"six"}}    for _, v := range data2 {        go v.print()    }    time.Sleep(3 * time.Second)}
@@ -178,4 +190,161 @@ Go语言的优点之一是可以将源码编译成一个对外部没有任何依
 目前http包的实现逻辑是只有当应答的Body中的内容被全部读取完毕且调用了Body.Close()，默认的HTTP客户端才会重用带有keep-alive标志的HTTP连接，否则每次HTTP客户端发起请求都会单独向服务端建立一条新的TCP连接，这样做的消耗要比重用连接大得多。
 注：仅在作为客户端时，http包才需要我们手动关闭Response.Body；如果是作为服务端，http包会自动处理Request.Body。
 
+
+
+```go
+func main() {
+    ctx, cancel := context.WithCancel(context.Background())
+
+    ch := func(ctx context.Context) <-chan int {
+        ch := make(chan int)
+        go func() {
+            for i := 0; ; i++ {
+                select {
+                case <- ctx.Done():
+                    return
+                case ch <- i:
+                }
+            }
+        } ()
+        return ch
+    }(ctx)
+
+    for v := range ch {
+        fmt.Println(v)
+        if v == 5 {
+            cancel()
+            break
+        }
+    }
+}
+```
+
++ Go语言内置的并发能力也可以通过组合的方式实现对计算能力的串联，比如通过goroutine+channel的组合实现类似Unix Pipe的能力。
+
+
++ 在Go中，大多数应用数组的场景都可以用切片替代
+``` go
+ for i, v := range a[:] {        
+    if i == 0 {            
+        a[1] = 12            
+        a[2] = 13        
+ }
+```
+
+
+```go
+// chapter3/sources/control_structure_idiom_5.go 
+func recvFromUnbufferedChannel() {    
+    var c = make(chan int)    
+    go func() {        
+        time.Sleep(time.Second * 3)        
+        c <- 1        
+        c <- 2        
+        c <- 3        
+        close(c)    
+    }()    
+    for v := range c {        
+        fmt.Println(v)   
+    }
+}
+```
+
+
+
++ 版本3：使用功能选项模式
+
++ Go语言之父Rob Pike早在2014年就在其博文“自引用函数与选项设计”[2]中论述了一种被后人称为“功能选项”（functional option）的模式，这种模式应该是目前进行功能选项设计的最佳实践。
+
+```go
+// chapter4/sources/variadic_function_9.go
+
+type FinishedHouse struct {    
+	style                  int    // 0: Chinese; 1: American; 2: European   
+	 centralAirConditioning bool   // true或false    
+	 floorMaterial          string  // "ground-tile"或"wood"    
+	 wallMaterial           string // "latex"或"paper"或"diatom-mud"
+	 }
+type Option func(*FinishedHouse)
+func NewFinishedHouse(options ...Option) *FinishedHouse {   
+	 h := &FinishedHouse{        // default options        
+		style:                  0,        
+		centralAirConditioning: true,       
+		 floorMaterial:          "wood",        
+		 wallMaterial:           "paper",    
+		 }    
+		 for _, option := range options {        
+			option(h)    
+			}    
+	return h
+}
+func WithStyle(style int) Option {    
+	return func(h *FinishedHouse) {        
+		h.style = style    
+		}
+	}
+func WithFloorMaterial(material string) Option {    
+	return func(h *FinishedHouse) {        
+		h.floorMaterial = material    
+	}
+}
+func WithWallMaterial(material string) Option {    
+	return func(h *FinishedHouse) {        
+		h.wallMaterial = material    
+		}
+	}
+func WithCentralAirConditioning(centralAirConditioning bool) Option {    
+	return func(h *FinishedHouse) {        
+		h.centralAirConditioning = centralAirConditioning    
+	}
+}
+func main() {    
+	fmt.Printf("%+v\n", NewFinishedHouse()) // 使用默认选项    
+	fmt.Printf("%+v\n", NewFinishedHouse(WithStyle(1),        
+	WithFloorMaterial("ground-tile"),        
+	WithCentralAirConditioning(false)))
+}
+```
+
+
+
+
+包裹函数（wrapper function）的形式是这样的：它接受接口类型参数，并返回与其参数类型相同的返回值。其代码如下：
+```go
+func YourWrapperFunc(param YourInterfaceType) YourInterfaceType
+```
+通过包裹函数可以实现对输入数据的过滤、装饰、变换等操作，并将结果再次返回给调用者。
+下面是Go标准库中一个典型的包裹函数io.LimitReader：
+```go
+// $GOROOT/src/io/io.go 
+func LimitReader(r Reader, n int64) Reader { 
+    return &LimitedReader{r, n} 
+}
+type LimitedReader struct {    
+    R Reader    N int64
+}
+func (l *LimitedReader) Read(p []byte) (n int, err error) {    ...}
+```
+我们看到LimitReader的一个输入参数为io.Reader接口类型，返回值类型依然为io.Reader。
+
++ 由于包裹函数的返回值类型与参数类型相同，因此我们可以将多个接受同一接口类型参数的包裹函数组合成一条链来调用，其形式如下：
+YourWrapperFunc1(YourWrapperFunc2(YourWrapperFunc3(...)))
+
+
+ ④ 支持超时机制的等待
+
+```go
+// chapter6/sources/go-concurrency-pattern-4.go 
+func main() {    
+	done := spawnGroup(5, worker, 30)    
+	println("spawn a group of workers")        
+	timer := time.NewTimer(time.Second * 5)    
+	defer timer.Stop()    
+	select {    
+		case <-timer.C:        
+		println("wait group workers exit timeout!")    
+		case <-done:        println("group workers done")    
+	}
+}
+```
 
