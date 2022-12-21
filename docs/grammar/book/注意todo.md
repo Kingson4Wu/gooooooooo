@@ -1,7 +1,5 @@
 + Go标准库：context 详解：https://mp.weixin.qq.com/s/HzODjvg42deE4f8dTp-KZw
 
-+ Go语言躲坑经验总结 要看看
-
 + Golang微服务简洁架构实战:<https://mp.weixin.qq.com/s/Ufu8mbBYcSXcJA0rTk8gWQ>
 
 + Go 每日一库之一个兼具单机和集群模式的轻量级限流器 throttled：<https://mp.weixin.qq.com/s/BDL-rrBk_P3irluHda4brQ>

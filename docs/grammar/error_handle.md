@@ -512,3 +512,7 @@ Go 1.13 将 xerrors 的部分功能（不是全部）整合进了标准库。它
 在main.go中使用fmt.Printf("%+v", err) 就能除了打印error的信息，也能将堆栈打印出来了。
 
 
+---
+
++ Go 1.20将支持wrapping multiple errors:<https://mp.weixin.qq.com/s/tnoJPK8vUnzz0c1kNV0RIA>
+    - 引入 Error Wrapping 后，Go 同时为errors包添加了 3 个工具函数，分别是Unwrap、Is和As。

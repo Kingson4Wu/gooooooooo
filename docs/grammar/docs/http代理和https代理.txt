@@ -1,0 +1,213 @@
+Go 源码分析：http代理和https代理
+https://mp.weixin.qq.com/s/mugOIRHAbBdR1w5u_XCr-w
+
+Go 源码分析：http代理和https代理
+Go语言中文网 2022-11-25 08:52 发表于北京
+以下文章来源于golang算法架构leetcode技术php ，作者技术牛犊
+
+
+首先还是上代码：https://github.com/xiazemin/dns_proxy，然后我们思考几个问题：我们使用charles抓包的时候使用的是https代理还是http代理？使用charles代理的时候为什么要装charles的证书，有什么作用？http代理能代理https的请求么？
+
+测试下：
+
+1，https代理https请求
+
+% HTTPS_PROXY=https://127.0.0.1:8441 curl 'https://www.baidu.com?name=12242'
+<!DOCTYPE html>
+<!--STATUS OK--><html> 
+ 2，https代理http请求
+
+ % HTTPS_PROXY=https://127.0.0.1:8441 curl 'http://www.baidu.com?name=12242'
+<!DOCTYPE html>
+<!--STATUS OK-->
+3，http代理http请求
+
+HTTP_PROXY=https://127.0.0.1:8081 curl 'http://www.baidu.com?name=12242'
+<!DOCTYPE html>
+<!--STATUS OK--><html>
+ 4，http请求代理https请求
+
+ % HTTP_PROXY=https://127.0.0.1:8081 curl 'https://www.baidu.com?name=12242'
+<!DOCTYPE html>
+<!--STATUS OK--><html>
+发现没有，都是可以代理的，为什么？
+
+        其实https代理和http代理只是决定了client->proxy这条链路上使用的协议，proxy根据它代理的协议决定，采用https还是http协议去访问服务端。那么问题来了代理是如何区分应该使用什么协议向服务端发起请求呢？解析协议？http代理怎么解析二进制的https协议？
+
+          在 HTTP 协议中，CONNECT 方法可以开启一个客户端与所请求资源之间的双向沟通的通道。它可以用来创建隧道（tunnel）。CONNECT 可以用来访问采用了 SSL (en-US) (HTTPS) 协议的站点。因此我们可以采用下面的方法来区分http还是https协议请求。
+
+func Serve(w http.ResponseWriter, r *http.Request) {
+  if r.Method == http.MethodConnect {
+    handleHttps(w, r)
+  } else {
+    handleHttp(w, r)
+  }
+}
+如果是http请求，我们原样转发就行，不必解析其内容
+
+func handleHttps(w http.ResponseWriter, r *http.Request) {
+  destConn, err := net.DialTimeout("tcp", r.Host, 60*time.Second)
+  hijacker, ok := w.(http.Hijacker)
+  clientConn, _, err := hijacker.Hijack()
+  go transfer(destConn, clientConn)
+  go transfer(clientConn, destConn)
+}
+其中
+
+func transfer(destination io.WriteCloser, source io.ReadCloser) {
+  defer destination.Close()
+  defer source.Close()
+  io.Copy(destination, source)
+}
+上面其实就是一个简单的http代理，对于https代理，我们需要先创建根证书CA，然后用根证书签发https的证书，在本地信任我们签发的根证书，就可以愉快的使用https代理了。根证书的目的是通过其权威性来保证由它签发的证书的可靠性，这也就是为什么charles抓包的时候需要下载charles的根证书，然后信任这个根证书的原因了。
+
+        如何生成根证书呢？可以使用openssl，先定义一个配置文件/etc/conf/gentestca.conf
+
+####################################
+[ req ]
+default_keyfile = /home/testca/private/cakey.pem    #需要修改为自己的实际路径
+default_md = md5
+prompt = no
+distinguished_name = ca_distinguished_name
+x509_extensions = ca_extensions
+
+[ ca_distinguished_name ]
+organizationName = TestOrg                   #可以自定义CA的信息
+organizationalUnitName  = TestDepartment       #可以自定义CA的信息
+commonName = TestCA                #可以自定义CA的信息
+emailAddress = ca_admin@testorg.com         #可以自定义CA的信息
+
+[ ca_extensions ]
+basicConstraints = CA:true
+########################################
+根据这个文件生成根证书
+
+openssl req -x509 -newkey rsa:2048 -out cacert.pem -outform PEM -days 2190 -config "/etc/conf/gentestca.conf"
+有了根证书就相当于有了一个证书颁发机构，就可以签发证书了
+
+openssl ca -in req.pem -out cert.pem -config "/etc/conf/testca.conf"
+        其实golang也实现了创建和签发，使用起来非常方便。在go提供的crypto/x509包下并没有生成CA的方法，生成证书的方法也只有一个方法：
+
+func CreateCertificate(rand io.Reader, template, parent *Certificate, pub, priv interface{}) (cert []byte, err error)
+如果传入的两个证书参数是一样的，那么生成的证书是一张自签发的根证书。如果传入的两张证书不同，生成的就是普通的证书了。使用的公钥和私钥是签发者的公私钥即参数parent的公私钥。和生成CertificateRequest一样，在这个方法中使用的公私钥不能是DSA类型的。Certificate这个结构体中有IsCA这个字段。用来标识该证书是CA证书，但是在设置该字段为true后生成的证书在扩展中并没有显示这个证书是CA证书的。原因是在如果要使IsCA生效，需要设置BasicConstraintsValid也为true。同样的也适用于MaxPathLen这个字段。
+
+签发根证书的实现
+
+template := x509.Certificate{
+    Subject: pkix.Name{
+      Organization: []string{"Log Courier"},
+    },
+    NotBefore: time.Now(),
+
+    KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+    ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+    BasicConstraintsValid: true,
+    IsCA:                  true,
+    DNSNames:              []string{"localhost", "*.xzm.com"},
+    IPAddresses:           []net.IP{net.IPv4(127, 0, 0, 1)},
+   }
+  derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+  certOut, err := os.Create("./learn/dns/https/ca/server.pem")
+用根证书签发我们请求用的证书
+
+  template := x509.Certificate{
+    Version:      1,
+    SerialNumber: serialNumber,
+    Subject:      subject,
+    NotBefore:    time.Now(),
+    NotAfter:     time.Now().Add(365 * time.Hour),
+    KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageDataEncipherment,
+    ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+    IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
+    Extensions:   []pkix.Extension{},
+    SubjectKeyId: []byte{1, 2, 3},
+    DNSNames:     []string{"localhost", "*.xzm.com"},
+  }
+  pk, _ := rsa.GenerateKey(rand.Reader, 2048)
+  derBytes, _ := x509.CreateCertificate(rand.Reader, &template, certificate, &pk.PublicKey, rootPrivateKey)
+区别在于第三个和第五个参数使用的不一样，是根证书。
+
+接着我们创建https代理
+
+server := &http.Server{
+    Addr: ":8441",
+    Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+      proxy.ServeHttps(w, r)
+    }),
+  }
+  fmt.Println(server.ListenAndServeTLS(certFile, keyFile))
+destConn, err := net.DialTimeout("tcp", r.Host, 60*time.Second)
+clientConn, _, err := hijacker.Hijack()
+  go transfer(destConn, clientConn)
+  go transfer(clientConn, destConn)
+测试下：
+
+curl -iv  https://127.0.0.1:8443
+*   Trying 127.0.0.1:8443...
+* Connected to 127.0.0.1 (127.0.0.1) port 8443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*  CAfile: /etc/ssl/cert.pem
+*  CApath: none
+* (304) (OUT), TLS handshake, Client hello (1):
+* (304) (IN), TLS handshake, Server hello (2):
+* (304) (IN), TLS handshake, Unknown (8):
+* (304) (IN), TLS handshake, Certificate (11):
+* SSL certificate problem: unable to get local issuer certificate
+* Closing connection 0
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+失败了，因为我们没有把我们生成的根证书ca加入系统证书，并且信任证书，导致找不到根证书。我们加入后再试试
+
+ curl -iv https://127.0.0.1:8443/
+*   Trying 127.0.0.1:8443...
+* Connected to 127.0.0.1 (127.0.0.1) port 8443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*  CAfile: /etc/ssl/cert.pem
+*  CApath: none
+* (304) (OUT), TLS handshake, Client hello (1):
+* (304) (IN), TLS handshake, Server hello (2):
+* (304) (IN), TLS handshake, Unknown (8):
+* (304) (IN), TLS handshake, Certificate (11):
+* (304) (IN), TLS handshake, CERT verify (15):
+* (304) (IN), TLS handshake, Finished (20):
+* (304) (OUT), TLS handshake, Finished (20):
+* SSL connection using TLSv1.3 / AEAD-AES128-GCM-SHA256
+* ALPN, server accepted to use h2
+* Server certificate:
+*  subject: O=\U71D5\U5B50\U674E\U4E09; OU=Books; CN=GO Web
+*  start date: Nov 19 12:37:59 2022 GMT
+*  expire date: Dec  4 17:37:59 2022 GMT
+*  subjectAltName: host "127.0.0.1" matched cert's IP address!
+*  issuer: O=Log Courier; CN=xmz
+*  SSL certificate verify ok.
+* Using HTTP2, server supports multiplexing
+* Connection state changed (HTTP/2 confirmed)
+* Copying HTTP/2 data in stream buffer to connection buffer after upgrade: len=0
+* Using Stream ID: 1 (easy handle 0x7fb08200bc00)
+> GET / HTTP/2
+> Host: 127.0.0.1:8443
+> user-agent: curl/7.79.1
+> accept: */*
+>
+* Connection state changed (MAX_CONCURRENT_STREAMS == 250)!
+< HTTP/2 200
+HTTP/2 200
+< content-type: text/plain; charset=utf-8
+content-type: text/plain; charset=utf-8
+< content-length: 12
+content-length: 12
+< date: Sat, 19 Nov 2022 12:38:20 GMT
+date: Sat, 19 Nov 2022 12:38:20 GMT
+
+<
+Hello, TLS!
+* Connection #0 to host 127.0.0.1 left intact
+需要注意的是在签发证书的时候我们需要把域名和ip都加上，否则证书验证不通过会导致链接不上，比如只加了127.0.0.1没有加localhost会导致127.0.0.1可以成功，localhost不成功。

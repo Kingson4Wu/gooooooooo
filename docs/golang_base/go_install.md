@@ -20,3 +20,8 @@ link 指定版本：
 
 + Go卸载重装和版本升级:<https://www.jianshu.com/p/79f84695cec7>
 + `export GOROOT=/usr/local/Cellar/go/1.18/libexec`
+
+
+---
+
++ 深入理解 go build 和 go install:<https://juejin.cn/post/6844903938060222471>
