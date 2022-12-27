@@ -1,3 +1,19 @@
+
+### 2022
++ https://mp.weixin.qq.com/s/TVMHl8CPutpvjp0ry3OzjQ
+
+### Go 1.19
++ 2022 年 8月
++ 相对于Go 1.18，Go 1.19的确是一个“小版本”。但Go 1.19对memory model的更新、SetMemoryLimit的加入、go doc comment的修订以及对go runtime的持续打磨依然可以让gopher们产生一丝丝“小兴奋”，尤其是SetMemoryLimit的加入，是否能改善Go应用因GC不及时被kill的情况呢，让我们拭目以待。
++ https://zhuanlan.zhihu.com/p/527810013
+
+### Go 1.18
++ 2022 年 3月
++ 泛型 Generics: 引入了对使用参数化类型的泛型代码的新支持, 达到了算法可复用的目的
++ 模糊测试Fuzzing: 提供了一种自动化测试的选择, Go 是第一个将模糊测试完全集成到其标准工具链中的主要语言
++ Workspaces: 解决go mod遗留下来的本地多模块开发依赖问题
++ 其次还包括CPU性能提升20%, 但是由于支持了泛型，对比1.17版本Go1.18 编译时间可能会慢 15-18%。
+
 ### Go 1.17
 + 2021 年 8月
 + 改进了编译器，具体来说是采用了一种新的函数参数和结果传递方式
