@@ -516,3 +516,32 @@ Go 1.13 将 xerrors 的部分功能（不是全部）整合进了标准库。它
 
 + Go 1.20将支持wrapping multiple errors:<https://mp.weixin.qq.com/s/tnoJPK8vUnzz0c1kNV0RIA>
     - 引入 Error Wrapping 后，Go 同时为errors包添加了 3 个工具函数，分别是Unwrap、Is和As。
+
+
+---
+
+https://mp.weixin.qq.com/s/p572g5KcSwy2ri40d1cPTg
+
+不可恢复的 panic
+
+不同于 try...catch，在 Golang 中并不是所有异常都能够被 recover 捕获到：
+当异常是通过 runtime.panic() 抛出时，能够被 recover 方法捕获；
+
+当异常是通过 runtime.throw() 或者 runtime.fatal() 抛出时，不能够被 recover 方法捕获。
+在上述实际场景中遇到的 “concurrent map writes” 异常就是通过 runtime.fatal() 抛出来的，具体源码(runtime/map.go)
+
+map 通过标志位 h.flags 来检查 map 是否存并发写情况，如果存在，则调用 fatal 方法，此时错误为 "fatal error"，会强制退出程序，详情见 fatal 源码
+
+func fatalthrow(t throwType) 
+->  exit(2)
+
+"concurrent map writes" 之所以被视为不可恢复异常，是因为 Golang 检测到数据竞争时，map 内部的结构已经被破坏了，继续运行可能会产生不可预期的结果，因此会强制结束程序。 以下罗列了一些其他不可恢复的异常种类：
+Out of memory
+Concurrent map writes
+Stack memory exhaustion
+Attempting to launch a nil function as a goroutine
+All goroutines are asleep - deadlock
+Thread limit exhaustion
+
+
+

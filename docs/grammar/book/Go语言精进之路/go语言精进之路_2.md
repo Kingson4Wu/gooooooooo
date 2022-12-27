@@ -962,7 +962,10 @@ Go目前主要支持两种性能数据采集方式：通过性能基准测试进
 一旦开启性能数据采集（比如传入-cpuprofile），go test的-c命令选项便会自动开启，go test命令执行后会自动编译出一个与该测试对应的可执行文件（这里是xxx.test）。该可执行文件可以在性能数据剖析过程中提供剖析所需的符号信息（如果没有该可执行文件，go tool pprof的disasm命令将无法给出对应符号的汇编代码）。而cpu.prof就是存储CPU性能采样数据的结果文件，后续将作为数据剖析过程的输入。
 
 对于其他类型的采样数据，也可以采用同样的方法开启采集并设置输出文件:
-`$go test -bench . xxx_test.go -memprofile=mem.prof$go test -bench . xxx_test.go -blockprofile=block.prof$go test -bench . xxx_test.go -mutexprofile=mutex.prof`
+```
+$go test -bench . xxx_test.go -memprofile=mem.prof
+$go test -bench . xxx_test.go -blockprofile=block.prof$go test -bench . xxx_test.go -mutexprofile=mutex.prof
+```
 
 （2）独立程序的性能数据采集
 可以通过标准库runtime/pprof和runtime包提供的低级API对独立程序进行性能数据采集。
@@ -1171,7 +1174,8 @@ http://localhost:8080/hi?color=red
 该待优化程序的源码如下：
 ```go
 //chapter8/sources/go-pprof-optimization-demo/step0/demo.go
-var visitors int64func handleHi(w http.ResponseWriter, r *http.Request) {    
+var visitors int64
+func handleHi(w http.ResponseWriter, r *http.Request) {    
     if match, _ := regexp.MatchString(`^\w*$`, r.FormValue("color")); !match {        
         http.Error(w, "Optional color is invalid", http.StatusBadRequest)        
         return    
@@ -1217,107 +1221,277 @@ pkg: chapter8/sources/go-pprof-optimization-demo/step1BenchmarkHiBenchmarkHi-8  
 `$go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -cpuprofile=cpu.prof`
 
 >> 执行完上述命令后，step1目录下会出现两个新文件step1.test和cpu.prof。我们将这两个文件作为go tool pprof的输入对性能数据进行剖析：
-
-`$go tool pprof step1.test cpu.profFile: step1.testType: cpuTime: xxDuration: 2.35s, Total samples = 2.31s (98.44%)Entering interactive mode (type "help" for commands, "o" for options)(pprof) top -cumShowing nodes accounting for 0.18s, 7.79% of 2.31s totalDropped 43 nodes (cum <= 0.01s)Showing top 10 nodes out of 121      flat  flat%   sum%        cum   cum%         0     0%     0%      1.90s 82.25%  chapter8/sources/go-pprof-optimization-demo/step1.BenchmarkHi         0     0%     0%      1.90s 82.25%  chapter8/sources/go-pprof-optimization-demo/step1.handleHi         0     0%     0%      1.90s 82.25%  testing.(*B).launch         0     0%     0%      1.90s 82.25%  testing.(*B).runN         0     0%     0%      1.31s 56.71%  regexp.MatchString         0     0%     0%      1.26s 54.55%  regexp.Compile (inline)     0.01s  0.43%  0.43%      1.26s 54.55%  regexp.compile     0.16s  6.93%  7.36%      0.75s 32.47%  runtime.mallocgc     0.01s  0.43%  7.79%      0.49s 21.21%  regexp/syntax.Parse         0     0%  7.79%      0.48s 20.78%  bytes.(*Buffer).Write(pprof)`
+```
+$go tool pprof step1.test cpu.prof
+File: step1.test
+Type: cpu
+Time: xx
+Duration: 2.35s, Total samples = 2.31s (98.44%)
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top -cum
+Showing nodes accounting for 0.18s, 7.79% of 2.31s total
+Dropped 43 nodes (cum <= 0.01s)
+Showing top 10 nodes out of 121      
+flat  flat%   sum%        cum   cum%         
+0     0%     0%      1.90s 82.25%  chapter8/sources/go-pprof-optimization-demo/step1.BenchmarkHi         
+0     0%     0%      1.90s 82.25%  chapter8/sources/go-pprof-optimization-demo/step1.handleHi         
+0     0%     0%      1.90s 82.25%  testing.(*B).launch         
+0     0%     0%      1.90s 82.25%  testing.(*B).runN         
+0     0%     0%      1.31s 56.71%  regexp.MatchString         
+0     0%     0%      1.26s 54.55%  regexp.Compile (inline)     
+0.01s  0.43%  0.43%      1.26s 54.55%  regexp.compile     
+0.16s  6.93%  7.36%      0.75s 32.47%  runtime.mallocgc     
+0.01s  0.43%  7.79%      0.49s 21.21%  regexp/syntax.Parse         
+0     0%  7.79%      0.48s 20.78%  bytes.(*Buffer).Write(pprof)
+```
 
 >> 通过top -cum，我们看到handleHi累积消耗CPU最多（用户层代码范畴）。通过list命令进一步展开handleHi函数：
-(pprof) list handleHiTotal: 2.31sROUTINE ======================== 
-chapter8/sources/go-pprof-optimization-demo/step1.handleHi in chapter8/sources/go-pprof-optimization-demo/step1/demo.go         
-0      1.90s (flat, cum) 82.25% of Total         .          .      9:)         .          .     
-10:         .          .     
-11:var visitors int64 // must be accessed atomically         .          .     
-12:         .          .     
-13:func handleHi(w http.ResponseWriter, r *http.Request) {         .      1.31s      
-14:if match, _ := regexp.MatchString(`^\w*$`, r.FormValue                                                  ("color")); !match {         .          .     
-15:              http.Error(w, "Optional color is invalid",                                                   http.StatusBadRequest)         .          .     
-16:              return         .          .     17:}         .          .     
-18:visitNum := atomic.AddInt64(&visitors, 1)         .       30ms     
-19:w.Header().Set("Content-Type", "text/html;                                                  charset=utf-8")         .      500ms      
-20:w.Write([]byte("<h1 style='color: " + r.FormValue                                         ("color") +         .       60ms     
-21:           "'>Welcome!</h1>You are visitor number                                            " + fmt.Sprint(visitNum) + "!"))         .          .     22:}         .          .     23:         .          .     24:func main() {         .          .     25:log.Printf("Starting on port 8080")         .          .     26:http.HandleFunc("/hi", handleHi)(pprof)
-我们看到在handleHi中，MatchString函数调用耗时最长（1.31s）。
+```
+(pprof) list handleHi
+Total: 4.14s
+ROUTINE ======================== /gooooooooo/command/cmd/hello/pprof.handleHi in /gooooooooo/go_command/cmd/hello/pprof/pprof.go
+      20ms      3.29s (flat, cum) 79.47% of Total
+         .          .      9:)
+         .          .     10:
+         .          .     11:var visitors int64
+         .          .     12:
+         .          .     13:func handleHi(w http.ResponseWriter, r *http.Request) {
+         .      2.63s     14:   if match, _ := regexp.MatchString(`^\w*$`, r.FormValue("color")); !match {
+         .          .     15:           http.Error(w, "Optional color is invalid", http.StatusBadRequest)
+         .          .     16:           return
+         .          .     17:   }
+      20ms       20ms     18:   visitNum := atomic.AddInt64(&visitors, 1)
+         .      140ms     19:   w.Header().Set("Content-Type", "text/html; charset=utf-8")
+         .      500ms     20:   w.Write([]byte("<h1 style='color: " + r.FormValue("color") + "'>Welcome!</h1>You are visitor number " + fmt.Sprint(visitNum) + "!"))
+         .          .     21:}
+         .          .     22:func main() {
+         .          .     23:   log.Printf("Starting on port 8080")
+         .          .     24:   http.HandleFunc("/hi", handleHi)
+         .          .     25:   log.Fatal(http.ListenAndServe("127.0.0.1:8080", nil))
+
+
+```
+
+
+我们看到在handleHi中，MatchString函数调用耗时最长（2.63s）。
 
 >> 3. 第一次优化（step2）
 通过前面对CPU类性能数据的剖析，我们发现MatchString较为耗时。通过阅读代码发现，每次HTTP服务接收请求后，都会采用正则表达式对请求中的color参数值做一次匹配校验。校验使用的是regexp包的MatchString函数，该函数每次执行都要重新编译传入的正则表达式，因此速度较慢。我们的优化手段是：让正则表达式仅编译一次。下面是优化后的代码：
-// chapter8/sources/go-pprof-optimization-demo/step2/demo.go...var visitors int64var rxOptionalID = regexp.MustCompile(`^\d*$`)func handleHi(w http.ResponseWriter, r *http.Request) {    if !rxOptionalID.MatchString(r.FormValue("color")) {        http.Error(w, "Optional color is invalid", http.StatusBadRequest)        return    }    ...}...
+```go
+// chapter8/sources/go-pprof-optimization-demo/step2/demo.go...
+var visitors int64
+var rxOptionalID = regexp.MustCompile(`^\d*$`)
+func handleHi(w http.ResponseWriter, r *http.Request) {    
+    if !rxOptionalID.MatchString(r.FormValue("color")) {        
+        http.Error(w, "Optional color is invalid", http.StatusBadRequest)        
+        return    
+    }    ...
+}...
+```
 
 >> 在优化后的代码中，我们使用一个代表编译后正则表达式对象的rxOptionalID的MatchString方法替换掉了每次都需要重新编译正则表达式的MatchString函数调用。
 重新运行一下性能基准测试：
-$go test -v -run=^$ -bench=.goos: darwingoarch: amd64pkg: chapter8/sources/go-pprof-optimization-demo/step2BenchmarkHiBenchmarkHi-8      2624650              457 ns/opPASSok         chapter8/sources/go-pprof-optimization-demo/step2   1.734s
+```
+$go test -v -run=^$ -bench=.
+goos: darwingoarch: amd64pkg: chapter8/sources/go-pprof-optimization-demo/step2BenchmarkHiBenchmarkHi-8      2624650              457 ns/opPASSok         chapter8/sources/go-pprof-optimization-demo/step2   1.734s
+```
 相比于优化前（3218 ns/op），优化后handleHi的性能（457 ns/op）提高了7倍多。
 
 >> 4. 内存分配采样数据剖析
 在对待优化程序完成CPU类型性能数据剖析及优化实施之后，再来采集另一种常用的性能采样数据——内存分配类型数据，探索一下在内存分配方面是否还有优化空间。Go程序内存分配一旦过频过多，就会大幅增加Go GC的工作负荷，这不仅会增加GC所使用的CPU开销，还会导致GC延迟增大，从而影响应用的整体性能。因此，优化内存分配行为在一定程度上也是提升应用程序性能的手段。
 
 >> 在go-pprof-optimization-demo/step2目录下，为demo_test.go中的BenchmarkHi增加Report-Allocs方法调用，让其输出内存分配信息。然后，通过性能基准测试的执行获取内存分配采样数据：
-`$go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -memprofile=mem.profgoos: darwingoarch: amd64pkg: chapter8/sources/go-pprof-optimization-demo/step2BenchmarkHiBenchmarkHi-8       5243474      455 ns/op      364 B/op      5 allocs/opPASSok         chapter8/sources/go-pprof-optimization-demo/step2   3.052s`
+```
+$go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -memprofile=mem.prof
+goos: darwin
+goarch: amd64
+pkg: chapter8/sources/go-pprof-optimization-demo/step2BenchmarkHiBenchmarkHi-8       5243474      455 ns/op      364 B/op      5 allocs/opPASSok         chapter8/sources/go-pprof-optimization-demo/step2   3.052s
+```
 
 >> 接下来，使用pprof工具剖析输出的内存分配采用数据（mem.prof）：
-`$go tool pprof step2.test mem.profFile: step2.testType: alloc_spaceEntering interactive mode (type "help" for commands, "o" for options)(pprof)`
+```
+$go tool pprof step2.test mem.prof
+File: step2.test
+Type: alloc_space
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof)
+```
 在go tool pprof的输出中有一行为Type: alloc_space。这行的含义是当前pprof将呈现程序运行期间所有内存分配的采样数据（即使该分配的内存在最后一次采样时已经被释放）。还可以让pprof将Type切换为inuse_space，这个类型表示内存数据采样结束时依然在用的内存。
 
 >> 可以在启动pprof工具时指定所使用的内存数据呈现类型：
-`$go tool pprof --alloc_space step2.test mem.prof `// 遗留方式`$go tool pprof -sample_index=alloc_space step2.test mem.prof` //最新方式
+`$go tool pprof --alloc_space step2.test mem.prof `// 遗留方式
+`$go tool pprof -sample_index=alloc_space step2.test mem.prof` //最新方式
 亦可在进入pprof交互模式后，通过sample_index命令实现切换：
-(pprof) sample_index = inuse_space
+`(pprof) sample_index = inuse_space`
 现在以alloc_space类型进入pprof命令交互界面并执行top命令：
 
-<pre>
-$go tool pprof -sample_index=alloc_space step2.test mem.profFile: step2.testType: alloc_spaceEntering interactive mode (type "help" for commands, "o" for options)(pprof) top -cumShowing nodes accounting for 2084.53MB, 99.45% of 2096.03MB totalShowing top 10 nodes out of 11     flat  flat%   sum%        cum   cum%        0     0%     0%  2096.03MB   100%  chapter8/sources/go-pprof-optimization-                                           demo/step2.BenchmarkHi 840.55MB 40.10% 40.10%  2096.03MB   100%  chapter8/sources/go-pprof-optimization-                                           demo/step2.handleHi        0     0% 40.10%  2096.03MB   100%  testing.(*B).launch        0     0% 40.10%  2096.03MB   100%  testing.(*B).runN        0     0% 40.10%  1148.98MB 54.82%  bytes.(*Buffer).Write        0     0% 40.10%  1148.98MB 54.82%  bytes.(*Buffer).grow1148.98MB 54.82% 94.92%  1148.98MB 54.82%  bytes.makeSlice        0     0% 94.92%  1148.98MB 54.82%  net/http/httptest.(*ResponseRecorder).                                           Write        0     0% 94.92%       95MB  4.53%  net/http.Header.Set (inline)     95MB  4.53% 99.45%       95MB  4.53%  net/textproto.MIMEHeader.Set (inline)(pprof)
-</pre>
-
+```
+$go tool pprof -sample_index=alloc_space step2.test mem.prof
+File: step2.test
+Type: alloc_space
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top -cum
+Showing nodes accounting for 2084.53MB, 99.45% of 2096.03MB total
+Showing top 10 nodes out of 11     
+flat  flat%   sum%        cum   cum%        0     0%     0%  2096.03MB   100%  chapter8/sources/go-pprof-optimization-                                           demo/step2.BenchmarkHi 
+840.55MB 40.10% 40.10%  2096.03MB   100%  chapter8/sources/go-pprof-optimization-                                           demo/step2.handleHi        
+0     0% 40.10%  2096.03MB   100%  testing.(*B).launch        0     0% 40.10%  2096.03MB   100%  testing.(*B).runN        0     0% 40.10%  1148.98MB 54.82%  bytes.(*Buffer).Write        0     0% 40.10%  1148.98MB 54.82%  bytes.(*Buffer).grow1148.98MB 54.82% 94.92%  1148.98MB 54.82%  bytes.makeSlice        0     0% 94.92%  1148.98MB 54.82%  net/http/httptest.(*ResponseRecorder).                                           Write        0     0% 94.92%       95MB  4.53%  net/http.Header.Set (inline)     95MB  4.53% 99.45%       95MB  4.53%  net/textproto.MIMEHeader.Set (inline)(pprof)
+```
 >> 我们看到handleHi分配了较多内存。通过list命令展开handleHi的代码：
-(pprof) list handleHiTotal: 2.05GBROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step2.handleHi in chapter8/sources/go-pprof-optimization-demo/step2/demo.go  840.55MB     2.05GB (flat, cum)   100% of Total         .          .     17:    http.Error(w, "Optional color is invalid",                                            http.StatusBadRequest)         .          .     18:    return         .          .     19: }         .          .     20:         .          .     21:  visitNum := atomic.AddInt64(&visitors, 1)         .       95MB     22:  w.Header().Set("Content-Type", "text/html;                                             charset= utf-8")  365.52MB     1.48GB     23:  w.Write([]byte("<h1 style='color: " +                                             r.FormValue ("color") +  475.02MB   486.53MB     24:    "'>Welcome!</h1>You are visitor number " +                                      fmt.Sprint(visitNum) + "!"))         .          .     25:}         .          .     26:         .          .     27:func main() {         .          .     28:  log.Printf("Starting on port 8080")         .          .     29:  http.HandleFunc("/hi", handleHi)(pprof)
+
+```
+(pprof) list handleHi
+Total: 2.05GBROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step2.handleHi in chapter8/sources/go-pprof-optimization-demo/step2/demo.go  840.55MB     2.05GB (flat, cum)   100% of Total         .          .     17:    http.Error(w, "Optional color is invalid",                                            http.StatusBadRequest)         .          .     18:    return         .          .     19: }         .          .     20:         .          .     21:  visitNum := atomic.AddInt64(&visitors, 1)         .       95MB     22:  w.Header().Set("Content-Type", "text/html;                                             charset= utf-8")  365.52MB     1.48GB     23:  w.Write([]byte("<h1 style='color: " +                                             r.FormValue ("color") +  475.02MB   486.53MB     24:    "'>Welcome!</h1>You are visitor number " +                                      fmt.Sprint(visitNum) + "!"))         .          .     25:}         .          .     26:         .          .     27:func main() {         .          .     28:  log.Printf("Starting on port 8080")         .          .     29:  http.HandleFunc("/hi", handleHi)(pprof)
+```
 通过list的输出结果我们可以看到handleHi函数的第23~25行分配了较多内存（见第一列）。
 
 >> 5. 第二次优化（step3）
 这里进行内存分配的优化方法如下：
-◦  删除w.Header().Set这行调用；
+ 删除w.Header().Set这行调用；
 ◦  使用fmt.Fprintf替代w.Write。
 优化后的handleHi代码如下：
-// go-pprof-optimization-demo/step3/demo.go...func handleHi(w http.ResponseWriter, r *http.Request) {    if !rxOptionalID.MatchString(r.FormValue("color")) {        http.Error(w, "Optional color is invalid", http.StatusBadRequest)        return    }    visitNum := atomic.AddInt64(&visitors, 1)    fmt.Fprintf(w, "<html><h1 stype='color: %s'>Welcome!</h1>You are visitor number %d!", r.FormValue("color"), visitNum)}...
+
+```go
+// go-pprof-optimization-demo/step3/demo.go...
+func handleHi(w http.ResponseWriter, r *http.Request) {    
+    if !rxOptionalID.MatchString(r.FormValue("color")) {        
+        http.Error(w, "Optional color is invalid", http.StatusBadRequest)        
+        return    
+    }    
+    visitNum := atomic.AddInt64(&visitors, 1)    
+    fmt.Fprintf(w, "<html><h1 stype='color: %s'>Welcome!</h1>You are visitor number %d!", r.FormValue("color"), visitNum)
+}
+```
 
 >> 再次执行性能基准测试来收集内存采样数据：
-$go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -memprofile=mem.profgoos: darwingoarch: amd64pkg: github.com/bigwhite/books/effective-go/chapters/chapter8/sources/go-pprof-optimization-demo/step3BenchmarkHiBenchmarkHi-8       7090537      346 ns/op      173 B/op      1 allocs/opPASSok      chapter8/sources/go-pprof-optimization-demo/step3     2.925s
+```
+$go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -memprofile=mem.prof
+goos: darwingoarch: amd64pkg: github.com/bigwhite/books/effective-go/chapters/chapter8/sources/go-pprof-optimization-demo/step3BenchmarkHiBenchmarkHi-8       7090537      346 ns/op      173 B/op      1 allocs/opPASSok      chapter8/sources/go-pprof-optimization-demo/step3     2.925s
+```
 和优化前的数据对比，内存分配次数由5 allocs/op降为1 allocs/op，每op分配的字节数由364B降为173B。
 
 >> 再次通过pprof对上面的内存采样数据进行分析，查看BenchmarkHi中的内存分配情况：
-<pre>
-$go tool pprof step3.test mem.profFile: step3.testType: alloc_spaceEntering interactive mode (type "help" for commands, "o" for options)(pprof) list handleHiTotal: 1.27GBROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step3.handleHi in chapter8/sources/go-pprof-optimization-demo/step3/demo.go   51.50MB     1.27GB (flat, cum)   100% of Total         .          .     17:    http.Error(w, "Optional color is invalid",                                             http. StatusBadRequest)         .          .     18:    return         .          .     19:  }         .          .     20:         .          .     21:  visitNum := atomic.AddInt64(&visitors, 1)   51.50MB     1.27GB     22:  fmt.Fprintf(w, "<html><h1 stype='color: %s'>Welcome!                                     </h1>You are visitor number %d!",                                  r.FormValue ("color"),visitNum)         .          .     23:}         .          .     24:         .          .     25:func main() {         .          .     26:  log.Printf("Starting on port 8080")         .          .     27:  http.HandleFunc("/hi", handleHi)(pprof)
-</pre>
+
+```
+$go tool pprof step3.test mem.prof
+File: step3.test
+Type: alloc_space
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) list handleHi
+Total: 1.27GBROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step3.handleHi in chapter8/sources/go-pprof-optimization-demo/step3/demo.go   51.50MB     1.27GB (flat, cum)   100% of Total         .          .     17:    http.Error(w, "Optional color is invalid",                                             http. StatusBadRequest)         .          .     18:    return         .          .     19:  }         .          .     20:         .          .     21:  visitNum := atomic.AddInt64(&visitors, 1)   51.50MB     1.27GB     22:  fmt.Fprintf(w, "<html><h1 stype='color: %s'>Welcome!                                     </h1>You are visitor number %d!",                                  r.FormValue ("color"),visitNum)         .          .     23:}         .          .     24:         .          .     25:func main() {         .          .     26:  log.Printf("Starting on port 8080")         .          .     27:  http.HandleFunc("/hi", handleHi)(pprof)
+```
 我们看到，对比优化前handleHi的内存分配的确大幅减少（第一列：365MB+475MB -> 51.5MB）。
 
 >> 6. 零内存分配（step4）
 
 >> 经过一轮内存优化后，handleHi当前的内存分配集中到下面这行代码：
+```go
 fmt.Fprintf(w, "<html><h1 stype='color: %s'>Welcome!</h1>You are visitor number %d!", r.FormValue("color"), visitNum)
+```
 fmt.Fprintf的原型如下：
-$ go doc fmt.Fprintffunc Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)
+`$ go doc fmt.Fprintffunc Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error)`
 我们看到Fprintf参数列表中的变长参数都是interface{}类型。前文曾提到过，一个接口类型占据两个字（word），在64位架构下，这两个字就是16字节。这意味着我们每次调用fmt.Fprintf，程序就要为每个变参分配一个占用16字节的接口类型变量，然后用传入的类型初始化该接口类型变量。这就是这行代码分配内存较多的原因。
 
 >> 要实现零内存分配，可以像下面这样优化代码：
-// chapter8/sources/go-pprof-optimization-demo/step4/demo.go...var visitors int64 // 必须被自动访问var rxOptionalID = regexp.MustCompile(`^\d*$`)var bufPool = sync.Pool{    New: func() interface{} {        return bytes.NewBuffer(make([]byte, 128))    },}func handleHi(w http.ResponseWriter, r *http.Request) {    if !rxOptionalID.MatchString(r.FormValue("color")) {        http.Error(w, "Optional color is invalid", http.StatusBadRequest)        return    }    visitNum := atomic.AddInt64(&visitors, 1)    buf := bufPool.Get().(*bytes.Buffer)    defer bufPool.Put(buf)    buf.Reset()    buf.WriteString("<h1 style='color: ")    buf.WriteString(r.FormValue("color"))    buf.WriteString("'>Welcome!</h1>You are visitor number ")    b := strconv.AppendInt(buf.Bytes(), visitNum, 10)    b = append(b, '!')    w.Write(b)}
+```go
+// chapter8/sources/go-pprof-optimization-demo/step4/demo.go...
+var visitors int64 // 必须被自动访问
+var rxOptionalID = regexp.MustCompile(`^\d*$`)
+var bufPool = sync.Pool{    
+    New: func() interface{} {        
+        return bytes.NewBuffer(make([]byte, 128))    
+    },
+}
+func handleHi(w http.ResponseWriter, r *http.Request) {    
+    if !rxOptionalID.MatchString(r.FormValue("color")) {        
+        http.Error(w, "Optional color is invalid", http.StatusBadRequest)        
+        return    
+    }    
+    visitNum := atomic.AddInt64(&visitors, 1)    
+    buf := bufPool.Get().(*bytes.Buffer)    
+    defer bufPool.Put(buf)    
+    buf.Reset()    
+    buf.WriteString("<h1 style='color: ")    
+    buf.WriteString(r.FormValue("color"))    
+    buf.WriteString("'>Welcome!</h1>You are visitor number ")    
+    b := strconv.AppendInt(buf.Bytes(), visitNum, 10)    
+    b = append(b, '!')    
+    w.Write(b)
+}
+```
 这里有几点主要优化：
 ◦  使用sync.Pool减少重新分配bytes.Buffer的次数；
 ◦  采用预分配底层存储的bytes.Buffer拼接输出；
 ◦  使用strconv.AppendInt将整型数拼接到bytes.Buffer中，
 
 >> strconv.AppendInt的实现如下：
-// $GOROOT/src/strconv/itoa.gofunc AppendInt(dst []byte, i int64, base int) []byte {    if fastSmalls && 0 <= i && i < nSmalls && base == 10 {        return append(dst, small(int(i))...)    }    dst, _ = formatBits(dst, uint64(i), base, i < 0, true)    return dst}
+```go
+// $GOROOT/src/strconv/itoa.go
+func AppendInt(dst []byte, i int64, base int) []byte {    
+    if fastSmalls && 0 <= i && i < nSmalls && base == 10 {        
+        return append(dst, small(int(i))...)    
+    }    
+    dst, _ = formatBits(dst, uint64(i), base, i < 0, true)    
+    return dst
+}
+```
 我们看到AppendInt内置对十进制数的优化。对于我们的代码而言，这个优化的结果就是没有新分配内存，而是利用了传入的bytes.Buffer的实例，这样，代码中strconv.AppendInt的返回值变量b就是bytes.Buffer实例的底层存储切片。
 运行一下最新优化后代码的性能基准测试并采样内存分配性能数据：
-$go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -memprofile=mem.profgoos: darwingoarch: amd64pkg: chapter8/sources/go-pprof-optimization-demo/step4BenchmarkHiBenchmarkHi-8      10765006      234 ns/op      199 B/op      0 allocs/opPASSok         chapter8/sources/go-pprof-optimization-demo/step4  2.884s
+```
+$go test -v -run=^$ -bench=^BenchmarkHi$ -benchtime=2s -memprofile=mem.prof
+goos: darwin
+goarch: amd64
+pkg: chapter8/sources/go-pprof-optimization-demo/step4BenchmarkHiBenchmarkHi-8      10765006      234 ns/op      199 B/op      0 allocs/opPASSok         chapter8/sources/go-pprof-optimization-demo/step4  2.884s
+```
 可以看到，上述性能基准测试的输出结果中每op的内存分配次数为0，而且程序性能也有了提升（346 ns/op → 234 ns/op）。剖析一下输出的内存采样数据：
-$go tool pprof step4.test mem.profFile: step4.testType: alloc_spaceEntering interactive mode (type "help" for commands, "o" for options)(pprof) list handleHiTotal: 2.12GBROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step4.handleHi in chapter8/sources/go-pprof-optimization-demo/step4/demo.go         0     2.12GB (flat, cum)   100% of Total         .          .     33:buf.WriteString("<h1 style='color: ")         .          .     34:buf.WriteString(r.FormValue("color"))         .          .     35:buf.WriteString("'>Welcome!</h1>You are visitor                                                  number ")         .          .     36:b := strconv.AppendInt(buf.Bytes(), visitNum, 10)         .          .     37:b = append(b, '!')         .     2.12GB     38:w.Write(b)         .          .     39:}         .          .     40:         .          .     41:func main() {         .          .     42:log.Printf("Starting on port 8080")         .          .     43:http.HandleFunc("/hi", handleHi)(pprof)
+```
+$go tool pprof step4.test mem.prof
+File: step4.test
+Type: alloc_space
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) list handleHi
+Total: 2.12GBROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step4.handleHi in chapter8/sources/go-pprof-optimization-demo/step4/demo.go         0     2.12GB (flat, cum)   100% of Total         .          .     33:buf.WriteString("<h1 style='color: ")         .          .     34:buf.WriteString(r.FormValue("color"))         .          .     35:buf.WriteString("'>Welcome!</h1>You are visitor                                                  number ")         .          .     36:b := strconv.AppendInt(buf.Bytes(), visitNum, 10)         .          .     37:b = append(b, '!')         .     2.12GB     38:w.Write(b)         .          .     39:}         .          .     40:         .          .     41:func main() {         .          .     42:log.Printf("Starting on port 8080")         .          .     43:http.HandleFunc("/hi", handleHi)(pprof)
+```
 从handleHi代码展开的结果中已经看不到内存分配的数据了（第一列）。
 
 >> 7. 查看并发下的阻塞情况（step5）
 
 >> 前面进行的性能基准测试都是顺序执行的，无法反映出handleHi在并发下多个goroutine的阻塞情况，比如在某个处理环节等待时间过长等。为了了解并发下handleHi的表现，我们为它编写了一个并发性能基准测试：
-// chapter8/sources/go-pprof-optimization-demo/step5/demo_test.go...func BenchmarkHiParallel(b *testing.B) {    r, err := http.ReadRequest(bufio.NewReader(strings.NewReader("GET /hi HTTP/1.0\r\n\r\n")))    if err != nil {        b.Fatal(err)    }    b.ResetTimer()    b.RunParallel(func(pb *testing.PB) {        rw := httptest.NewRecorder()        for pb.Next() {            handleHi(rw, r)        }    })}...
+```go
+// chapter8/sources/go-pprof-optimization-demo/step5/demo_test.go...
+func BenchmarkHiParallel(b *testing.B) {    
+    r, err := http.ReadRequest(bufio.NewReader(strings.NewReader("GET /hi HTTP/1.0\r\n\r\n")))    
+    if err != nil {        
+        b.Fatal(err)    
+    }    
+    b.ResetTimer()    
+    b.RunParallel(func(pb *testing.PB) {        
+        rw := httptest.NewRecorder()        
+        for pb.Next() {            
+            handleHi(rw, r)        
+        }    
+    })
+}...
+```
 
 >> 执行该基准测试，并对阻塞时间类型数据（block.prof）进行采样与剖析：
-$go test -bench=Parallel -blockprofile=block.profgoos: darwingoarch: amd64pkg: chapter8/sources/go-pprof-optimization-demo/step5BenchmarkHiParallel-8     15029988              118 ns/opPASSok         chapter8/sources/go-pprof-optimization-demo/step5   2.092s$go tool pprof step5.test block.profFile: step5.testType: delayEntering interactive mode (type "help" for commands, "o" for options)(pprof) topShowing nodes accounting for 3.70s, 100% of 3.70s totalDropped 18 nodes (cum <= 0.02s)Showing top 10 nodes out of 15      flat  flat%   sum%        cum   cum%     1.85s 50.02% 50.02%      1.85s 50.02%  runtime.chanrecv1     1.85s 49.98%   100%      1.85s 49.98%  sync.(*WaitGroup).Wait         0     0%   100%      1.85s 49.98%  chapter8/sources/go-pprof-optimization-                                            demo/step5.BenchmarkHiParallel         0     0%   100%      1.85s 50.02%  main.main         0     0%   100%      1.85s 50.02%  runtime.main         0     0%   100%      1.85s 50.02%  testing.(*B).Run         0     0%   100%      1.85s 49.98%  testing.(*B).RunParallel         0     0%   100%      1.85s 50.01%  testing.(*B).doBench         0     0%   100%      1.85s 49.98%  testing.(*B).launch         0     0%   100%      1.85s 50.01%  testing.(*B).run(pprof) list handleHiTotal: 3.70sROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step5.handleHi in chapter8/sources/go-pprof-optimization-demo/step5/demo.go         0    18.78us (flat, cum) 0.00051% of Total         .          .     19:    return bytes.NewBuffer(make([]byte, 128))         .          .     20:  },         .          .     21:}         .          .     22:         .          .     23:func handleHi(w http.ResponseWriter, r *http.Request) {         .    18.78us     24:  if !rxOptionalID.MatchString(r.FormValue("color")) {         .          .     25:    http.Error(w, "Optional color is invalid",                                    http. StatusBadRequest)         .          .     26:    return         .          .     27:  }         .          .     28:         .          .     29:  visitNum := atomic.AddInt64(&visitors, 1)(pprof)
+```
+$go test -bench=Parallel -blockprofile=block.prof
+goos: darwin
+goarch: amd64
+pkg: chapter8/sources/go-pprof-optimization-demo/step5BenchmarkHiParallel-8     15029988              118 ns/op
+PASS
+ok         chapter8/sources/go-pprof-optimization-demo/step5   2.092s
+
+$go tool pprof step5.test block.prof
+File: step5.test
+Type: delay
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top
+Showing nodes accounting for 3.70s, 100% of 3.70s totalDropped 18 nodes (cum <= 0.02s)Showing top 10 nodes out of 15      flat  flat%   sum%        cum   cum%     1.85s 50.02% 50.02%      1.85s 50.02%  runtime.chanrecv1     1.85s 49.98%   100%      1.85s 49.98%  sync.(*WaitGroup).Wait         0     0%   100%      1.85s 49.98%  chapter8/sources/go-pprof-optimization-                                            demo/step5.BenchmarkHiParallel         0     0%   100%      1.85s 50.02%  main.main         0     0%   100%      1.85s 50.02%  runtime.main         0     0%   100%      1.85s 50.02%  testing.(*B).Run         0     0%   100%      1.85s 49.98%  testing.(*B).RunParallel         0     0%   100%      1.85s 50.01%  testing.(*B).doBench         0     0%   100%      1.85s 49.98%  testing.(*B).launch         0     0%   100%      1.85s 50.01%  testing.(*B).run
+(pprof) list handleHi
+Total: 3.70sROUTINE ======================== chapter8/sources/go-pprof-optimization-demo/step5.handleHi in chapter8/sources/go-pprof-optimization-demo/step5/demo.go         0    18.78us (flat, cum) 0.00051% of Total         .          .     19:    return bytes.NewBuffer(make([]byte, 128))         .          .     20:  },         .          .     21:}         .          .     22:         .          .     23:func handleHi(w http.ResponseWriter, r *http.Request) {         .    18.78us     24:  if !rxOptionalID.MatchString(r.FormValue("color")) {         .          .     25:    http.Error(w, "Optional color is invalid",                                    http. StatusBadRequest)         .          .     26:    return         .          .     27:  }         .          .     28:         .          .     29:  visitNum := atomic.AddInt64(&visitors, 1)(pprof)
+```
 
 >> handleHi并未出现在top10排名中。进一步展开handleHi代码后，我们发现整个函数并没有阻塞goroutine过长时间的环节，因此无须对handleHi进行任何这方面的优化。当然这也源于Go标准库对regexp包的Regexp.MatchString方法做过针对并发的优化（也是采用sync.Pool），具体优化方法这里就不赘述了。
 
