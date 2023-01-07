@@ -134,3 +134,70 @@ func (j *janitor) Run(c *cache) {
   - 用goroutine开启定时任务，会有这个问题，所以控制结束时机
   - java使用线程开启定时任务，同样会有这个问题！！
 + runtime.SetFinalizer 是Go提供对象被GC回收时的一个注册函数，可以在对象被回收的时候回调函数
+
+
+----
+
+## Freecache
+
++ 深入理解Freecache:<https://blog.csdn.net/chizhenlian/article/details/108435024>
+
+使用freecache的注意事项
+缓存的数据如果可以的话，大小尽量均匀一点，可以减少RingBuf容量不足时的置换工作开销。
+缓存的数据不易过大，这样子才能缓存更多的key，提高缓存命中率。
+
++ 深入理解golang内存缓存利器-FreeCache:<https://zhuanlan.zhihu.com/p/402841754> --- 这篇写得更好!!!
+
+
+## Bigcache
+
+避免高额的GC开销
+在bigCache中，map中没有使用指针，在 Golang(>1.4) 中，如果map中不包含指针的话，GC 便会忽略这个 map。
+
+在bigCache中，bigCache将数据存储在BytesQueue中，BytesQueue的底层结构是[]byte ，这样只给GC增加了一个额外对象，
+
+由于字节切片除了自身对象并不包含其他指针数据，所以GC对于整个对象的标记时间是O(1)的。
+————————————————
+版权声明：本文为CSDN博主「CoLiuRs」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/baidu_32452525/article/details/118199442
+
++ <https://zhuanlan.zhihu.com/p/285133613>
+
+FreeCache
+FreeCache 将缓存分成了 256 段，每段包括 256 个槽和一个 ring buffer 存储数据。当一个新的元素被添加进来的时候，使用 hash 值下 8 位作为标识 id，通过使用 LSB 9-16 的值作为槽 ID。将数据分配到多个槽里面，有助于优化查询的时间 ( 分治策略 )。
+
+数据被存储在 ring buffer 中，位置被保存在一个排序的数组里面。如果 ring buffer 内存不足，则会利用 LRU 的策略在 ring buffer 逐个扫描，如果缓存的最后访问时间小于平均访问的时间，就会被删掉。要找到一个缓存内容，在槽中是通过二分查找法对一个已经排好的数据进行查询。
+
+GroupCache
+GroupCache 使用链表和 Map 实现了一个精准的 LRU 删除策略的缓存。为了进行公平的比较，我们在 GroupCache 的基础上，实现了一个包括 256 个分片的切片结构。
+
++ 读:由于读锁是无消耗的，所以 BigCache 的伸缩性更好。FreeCache 和 GroupCache 读锁是有消耗的，并且在并发数达到 20 的时候，伸缩性下降了。(Y 轴越大越好 )
++ 写:在只写的情况下，三者的性能表现比较接近，FreeCache 比另两个的情况，稍微好一点。
++ 读写情况 (25% 写，75% 读 ): 两者混合的情况下，BigCache 看起来是唯一一个在伸缩性上表现完美的
+
+### 源码分析
+认真学完 bigcache 的代码，我们至少有以下几点收获：
+
+可以通过 sharding 来降低资源竞争
+可以用位运算来取余数做 sharding （需要是 2 的整数幂 - 1）
+避免 map 中出现指针、使用 go 基础类型可以显著降低 GC 压力、提升性能
+bigcache 底层存储是 bytes queue，初始化时设置合理的配置项可以减少 queue 扩容的次数，提升性能
+
+作者：翔叔架构笔记
+链接：https://juejin.cn/post/7107635176263385118
+来源：稀土掘金
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+
+### todo
++ Golang 高性能 LocalCache：BigCache 设计与分析:<https://pandaychen.github.io/2020/03/03/BIGCACHE-ANALYSIS/>
++ Go开源项目BigCache如何加速并发访问以及避免高额的GC开销:<https://juejin.cn/post/6844903993114624008>
++ 妙到颠毫: bigcache优化技巧:<https://colobu.com/2019/11/18/how-is-the-bigcache-is-fast/>
+
+
+## ristretto
+
++ Ristretto简介：高性能Go缓存:<https://www.zhihuclub.com/87009.shtml>
++ Ristretto: 高性能内存绑定Go缓存:<https://www.5axxw.com/wiki/content/fzxtu6>
+
++ Introducing Ristretto: A High-Performance Go Cache:<https://phenix3443.github.io/notebook/golang/Introducing_Ristretto_A_High-Performance_Go_Cache.html>
+
