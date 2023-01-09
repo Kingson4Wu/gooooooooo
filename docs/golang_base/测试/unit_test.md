@@ -43,3 +43,54 @@ go-mock
 因此，对于 assert （断言）工具，可以选择 testify 或 convery，笔者这里选择了 testify。对于 mock （模拟）工具，笔者这里选择了 gomock 和 gomonkey。关于 mock 工具同时使用 gomock 和 gomonkey，这里跟 Golang 的语言特性有关，下面会详细的说明。
 
 
+---
+
+
+## testify
++ https://cloud.tencent.com/developer/article/1869961
++ test/test/testify_test.go
+
+## gomock
+
++ https://geektutu.com/post/quick-gomock.html
++ test/test/gomock_test.go
+
++ gomock 是官方提供的 mock 框架，同时还提供了 mockgen 工具用来辅助生成测试代码。
+
++ go install github.com/golang/mock/mockgen@latest
++ mockgen -source=db.go -destination=db_mock.go -package=test
+
+## gomonkey
+
++ https://www.cnblogs.com/lanyangsh/p/14587921.html
+
++ 很强!!!
+
++ gomonkey支持任何场景的打桩，而gomock仅支持对interface的打桩
+
+## goconvey
++ https://www.jianshu.com/p/1bd1ece2fa38
++ 要使用GoConvey的web界面，这时需要提前安装GoConvey的二进制，命令为go install github.com/smartystreets/goconvey@latest
++ go get github.com/smartystreets/goconvey/convey@v1.7.2
+
+## sqlmock
++ https://cloud.tencent.com/developer/article/1881962
++ https://blog.csdn.net/lanyang123456/article/details/123303324
+
+## miniredis
++ https://github.com/alicebob/miniredis
++ go get github.com/alicebob/miniredis/v2
++ https://golang-tech-stack.com/post/4329
+
+
+
+
+---
+
+
+GoConvey(断言、嵌套) 
+Gomonkey(全局变量、函数、方法、接口等等打桩) 
+sqlmock(DB模拟)
+miniredis(redis模拟)
+
+---
