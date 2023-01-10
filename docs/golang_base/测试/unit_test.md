@@ -68,6 +68,10 @@ go-mock
 
 + gomonkey支持任何场景的打桩，而gomock仅支持对interface的打桩
 
++ gomonkey支持为private method打桩了:<https://www.jianshu.com/p/7546e788613b>
+
++ https://www.jianshu.com/u/1381dc29fed9
+
 ## goconvey
 + https://www.jianshu.com/p/1bd1ece2fa38
 + 要使用GoConvey的web界面，这时需要提前安装GoConvey的二进制，命令为go install github.com/smartystreets/goconvey@latest
