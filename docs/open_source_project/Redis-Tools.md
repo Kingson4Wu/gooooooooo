@@ -1,7 +1,14 @@
 
 + https://github.com/zehuamama/redis-tools
 
-Redis-Toolsredis-tools聚合了后端小伙伴常见的工具集，它有以下特性：分布式锁、自旋锁原子命令 compare and swap原子命令 compare and deleteredis-tools 代码量极少，学习它，开发者可以得到以下收获：代码简洁规范redis lua脚本实现redis 分布式锁的正确实现
+Redis-Toolsredis-tools聚合了后端小伙伴常见的工具集，它有以下特性：
+分布式锁、自旋锁原子命令 
+compare and swap原子命令 
+compare and delete
+redis-tools 代码量极少，学习它，开发者可以得到以下收获：
+代码简洁规范
+redis lua脚本实现
+redis 分布式锁的正确实现
 
 作者：马丸子
 链接：https://www.zhihu.com/question/20801814/answer/2461184379
