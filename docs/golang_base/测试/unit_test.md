@@ -72,6 +72,11 @@ go-mock
 
 + https://www.jianshu.com/u/1381dc29fed9
 
++ 使用 gomonkey 遇到非 debug 模式执行失败的问题及解决方法
++ https://blog.csdn.net/qq_35246620/article/details/125089186
+方法1：go test -gcflags "all=-N -l" ，直接在go test命令行后面加上-gcflags "all=-N -l" 参数；
+方法2：使用 GoLand，在Go Test的配置项Go tool arguments中，配置-gcflags "all=-N -l" 参数。
+
 ## goconvey
 + https://www.jianshu.com/p/1bd1ece2fa38
 + 要使用GoConvey的web界面，这时需要提前安装GoConvey的二进制，命令为go install github.com/smartystreets/goconvey@latest

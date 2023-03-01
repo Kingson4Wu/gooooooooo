@@ -159,3 +159,44 @@ Would this race condition be considered a bug?
 
 
 + 因为这段代码是有竞态的，没有任何同步机制。go 编译器认为这一段是 dead code，索性直接优化掉了。 !!!!
+
+
+----
+
+
+go test -race ./...
+syscall.ptrace: nosplit stack over 792 byte limit
+syscall.ptrace<1>
+    grows 120 bytes, calls syscall.ptrace1<1>
+
+这个错误是因为在运行 Go 的测试时，您使用了 -race 标志来检测数据竞争问题。在检测过程中，运行时系统会使用一个更小的栈大小来运行每个协程，并使用更严格的栈大小限制来检测竞争条件。这可能会导致您的程序在运行时出现栈溢出的问题，尤其是在使用系统调用（例如 ptrace）时。
+
+为了解决这个问题，您可以尝试以下几种方法：
+
+增加栈大小
+
+您可以通过设置 GOMAXPROCS 和 GODEBUG 环境变量，来增加每个协程的栈大小。例如：
+
+bash
+Copy code
+export GOMAXPROCS=4
+export GODEBUG="asyncpreemptoff=1,asyncpreemptoff=0,GOROOT_FINAL=1,stacksize=16384"
+在这个示例中，我们将每个协程的栈大小增加到 16KB。
+
+使用 cgo 调用系统调用
+
+如果您的程序使用了系统调用（例如 ptrace），则可能需要使用 cgo 调用这些调用，而不是直接在 Go 代码中使用它们。cgo 允许您编写 C 或 C++ 代码来调用系统调用，并在 Go 代码中使用它们。这样可以避免栈溢出问题，因为 C 或 C++ 代码使用的栈比 Go 代码使用的栈要小得多。
+
+在使用 cgo 时，请确保遵循官方文档中的最佳实践，以避免其他问题。
+
+减少每个协程使用的栈大小
+
+您还可以尝试减少每个协程使用的栈大小。为此，可以使用 -gcflags 标志并将 -l 标志与其结合使用。例如：
+
+bash
+Copy code
+go test -race -gcflags "-l" ./...
+-l 标志可以让 Go 编译器在生成代码时使用更少的栈空间。
+
+请注意，这些解决方案并不能保证完全解决问题。如果您的程序依赖于大量的系统调用，并且它们使用的栈空间很大，那么即使采用了上述解决方案，仍然可能会出现栈溢出的问题。
+
