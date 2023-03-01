@@ -7,21 +7,15 @@ import (
 	"time"
 )
 
-/**
+/*
+*
 https://www.zhihu.com/question/52895544
 */
 func main() {
 	n := 14
 	m := 4
-	nn := 1
-	mm := 1
 	nm := 1
-	for i := 1; i <= n; i++ {
-		nn = nn * i
-	}
-	for i := 1; i <= m; i++ {
-		mm = mm * i
-	}
+
 	for i := 1; i <= (n - m); i++ {
 		nm = nm * i
 	}

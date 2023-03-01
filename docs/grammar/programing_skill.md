@@ -921,3 +921,10 @@ golang 的编译器是怎么做的呢？它会在代码里给你设定一个通�
    - 2.对http.Client进行跟踪，使用 http.RoundTripper wrapper 来标识当前的请求
 
 
+----
+
++ test/goweb/09.advanced-middleware/middleware.go
+
+
+-----
+
