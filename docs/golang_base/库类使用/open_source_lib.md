@@ -71,3 +71,6 @@ https://github.com/panjf2000/ants
 + gorilla/mux是 gorilla Web 开发工具包中的路由管理库。
 
 + gopsutil是 Python 工具库psutil 的 Golang 移植版，可以帮助我们方便地获取各种系统和硬件信息。
+
++ go-streams : 用于 Go 的轻量级流处理库，提供了一种简单简洁的 DSL 来构建数据管道。
+

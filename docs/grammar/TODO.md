@@ -40,3 +40,16 @@ https://pkg.go.dev/ !!!
 + 应用构建三剑客：Pflag、Viper、Cobra
 + Go SDK 设计
 + Go 单元测试、性能测试
+
+
+---
+
+https://github.com/geektutu/7days-golang
+
++ 学习方法技巧, 文档规范, 多项目结构
++ https://geektutu.com/post/gee-day4.html
+
+---
+
+
+
