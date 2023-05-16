@@ -1,3 +1,22 @@
+### Go 1.21
++ 2023 年 8月
++ Go 1.21新特性前瞻：https://mp.weixin.qq.com/s/PwSJQM7WmJeLnDDbCr78hg
++ 支持WASI （不就是Java的虚拟机， Java字节码，多个平台运行？？）
+
+
+### Go 1.20
++ 2023 年 2月
++ https://segmentfault.com/a/1190000043400204
++ 大部分更改都在工具链、运行时和库的实现中。
++ Go 1.17 添加了从切片到数组指针的转换。Go 1.20 扩展了它以允许从切片到数组的转换：给定一个切片x,[4]byte(x)现在可以写成*(*[4]byte)(x).
+
+
+#### Arena
++ https://zhuanlan.zhihu.com/p/583572024
++ Arena 指的是一种从一个连续的内存区域分配一组内存对象的方式。优点比一般的内存分配更有效率，也可以一次性释放。当然了，它的重点是要手动管理内存。
++ Go1.20 将会支持 arena 特性，通过 GOEXPERIMENT=arena 来打开
++ Go 1.20新特性Arena手动内存管理:<https://juejin.cn/post/7195889966756380730>
+
 
 ### 2022
 + https://mp.weixin.qq.com/s/TVMHl8CPutpvjp0ry3OzjQ
