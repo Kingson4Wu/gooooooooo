@@ -28,3 +28,35 @@ gin.Context 提供了一系列解析、校验请求的方法，其中内置了 v
 原文链接：https://blog.csdn.net/baidu_32452525/article/details/117138171
 
 
+----
+
+https://gin-gonic.com/zh-cn/docs/
+https://gin-gonic.com/docs/
+
+https://gin-gonic.com/zh-cn/docs/examples/
+
+https://gin-gonic.com/zh-cn/docs/examples/goroutines-inside-a-middleware/
+
+
+```go
+// 创建在 goroutine 中使用的副本
+		cCp := c.Copy()
+		go func() {
+			// 用 time.Sleep() 模拟一个长任务。
+			time.Sleep(5 * time.Second)
+
+			// 请注意您使用的是复制的上下文 "cCp"，这一点很重要
+			log.Println("Done! in path " + cCp.Request.URL.Path)
+		}()
+```
+
+https://gin-gonic.com/zh-cn/docs/examples/custom-middleware/
+
+https://gin-gonic.com/zh-cn/docs/examples/custom-validators/
+
+https://gin-gonic.com/zh-cn/docs/examples/run-multiple-service/
+
+https://gin-gonic.com/zh-cn/docs/examples/redirects/
+
+
+

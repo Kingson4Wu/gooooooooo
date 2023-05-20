@@ -3,6 +3,9 @@
 + Go 1.21新特性前瞻：https://mp.weixin.qq.com/s/PwSJQM7WmJeLnDDbCr78hg
 + 支持WASI （不就是Java的虚拟机， Java字节码，多个平台运行？？）
 
++ Go从1.11版本[13]就开始支持将Go源码编译为wasm二进制文件，并在支持wasm的浏览器环境中运行。
+
+不过WebAssembly绝不仅仅被设计为仅限于在Web浏览器中运行，核心的WebAssembly语言是独立于其周围环境的，WebAssembly完全可以通过API与外部世界互动。在Web上，它自然使用浏览器提供的现有Web API。然而，在浏览器之外，之前还没有一套标准的API可以让WebAssembly程序使用。这使得创建真正可移植的非Web WebAssembly程序变得困难。WebAssembly System Interface(WASI)[14]是一个填补这一空白的倡议，它有一套干净的API，可以由多个引擎在多个平台上实现，并且不依赖于浏览器的功能（尽管它们仍然可以在浏览器中运行）。
 
 ### Go 1.20
 + 2023 年 2月
