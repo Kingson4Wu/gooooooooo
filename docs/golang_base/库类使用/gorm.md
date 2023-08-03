@@ -2,3 +2,12 @@
 
 https://gorm.io/zh_CN/docs/index.html
 
+
+### DBResolver
++ https://gorm.io/zh_CN/docs/dbresolver.html
+GORM 支持基于策略的 sources/replicas 负载均衡，自定义策略应该是一个实现了以下接口的 struct：
+
+type Policy interface {
+    Resolve([]gorm.ConnPool) gorm.ConnPool
+}
+
