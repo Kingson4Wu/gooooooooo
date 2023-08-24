@@ -160,3 +160,12 @@ go tool pprof -http :8081 http://localhost:8033/debug/pprof/profile?seconds=5
 
 
 ----
+
+导出goroutine的信息，你可以使用pprof来生成一个goroutine dump文件
+在浏览器中输入：http://localhost:6060/debug/pprof/
+点击"goroutine"链接，将显示当前运行的goroutine列表。
+"Download"按钮，点击它将会下载一个名为"goroutine"的文件。这个文件就是导出的goroutine dump文件，其中包含了所有运行中的goroutine的信息。
+使用go tool pprof命令行工具来分析goroutine dump文件
+go tool pprof /path/to/your/program binary /path/to/goroutine_dump_file
+
+

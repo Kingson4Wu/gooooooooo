@@ -14,3 +14,8 @@
 
 + Go - 使用工具生成易读的 Protocol 文档:<https://mp.weixin.qq.com/s/iHMUoGg-d_NBkq9majYQTw>
     - protoc-gen-doc
+
++ 写给go开发者的gRPC教程-metadata :<https://mp.weixin.qq.com/s/2BQdYDUDeCpL12S_R1UNPA>
+
++ 写给go开发者的gRPC教程-错误处理：<https://mp.weixin.qq.com/s/ghJiTvJxYzLKTFs5gZga5w>
+
