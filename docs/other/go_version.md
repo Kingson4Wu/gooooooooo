@@ -7,6 +7,30 @@
 
 不过WebAssembly绝不仅仅被设计为仅限于在Web浏览器中运行，核心的WebAssembly语言是独立于其周围环境的，WebAssembly完全可以通过API与外部世界互动。在Web上，它自然使用浏览器提供的现有Web API。然而，在浏览器之外，之前还没有一套标准的API可以让WebAssembly程序使用。这使得创建真正可移植的非Web WebAssembly程序变得困难。WebAssembly System Interface(WASI)[14]是一个填补这一空白的倡议，它有一套干净的API，可以由多个引擎在多个平台上实现，并且不依赖于浏览器的功能（尽管它们仍然可以在浏览器中运行）。
 + 引入了两个新的内置函数 min 和 max
++ slog : Go日志记录新选择 : https://mp.weixin.qq.com/s/4HN0-m8AlzSmDCuF9hYU4Q
+
++ Go 1.21中值得关注的几个变化：<https://mp.weixin.qq.com/s/3bfD9LPBB5zA9VxAv920Cw>
+    - 1.1 min、max和clear
+    - 1.2 明确了包初始化顺序算法(注：对包的初始化顺序有依赖，这本身就不是一种很好的设计)
+    - 1.3 type inference的增强(对泛型的类型推断能力做了增强)
+    - 1.4 修正Go1中的“陷阱”
+        - 1.4.1 panic(nil)语义:Go编译器会将panic(nil)替换为panic(new(runtime.PanicNilError))
+        - 1.4.2 loop var per-loop -> loop var per-iteration (以实验语义(GOEXPERIMENT=loopvar)提供了默认采用loop var per-iteration语义的for循环(包括for range)。新语义仅在GOEXPERIMENT=loopvar且在for语句(包括for range)的前置条件表达式中使用短变量声明循环变量时才生效。)
+    - 2.1 PGO默认开启
+        - Go 1.20版本[17]引入了PGO(profile-guided optimization)优化技术预览版，Go 1.21版本中，PGO正式GA。如果main包目录下包含default.pgo文件，Go 1.21编译器在编译二进制文件时就会默认开启基于default.pgo中数据的pgo优化。优化带来的性能提升因程序而异，一般是2%~7%。
+        - Go 1.21编译器自身就是基于PGO优化过的，编译速度提升约6%。  
+    - 2.2 大幅降低GC尾部延迟
+    - 2.3 支持WASI(WebAssembly System Interface)
+    - 4.1 log/slog
+    - 4.2 slices、maps和cmp（cmp包是slices包依赖的包，这个包非常简单且内聚，它仅提供了与compare和ordered相关的约束类型定义与简单泛型函数）
+    - 4.3 其他变化
+        -  增加errors.ErrUnsupported  
+        - flag：增加BoolFunc函数
+        - net: 在linux上支持多路径TCP
+        - reflect：ValueOf允许在栈上分配Value的内容
+        - sync: 增加OnceFunc, OnceValue和OnceValues等语法糖函数
+        - testing: 新增Testing函数 （为testing包增加了func Testing() bool函数，该函数可以用来报告当前程序是否是go test创建的测试程序。使用Testing函数，我们可以确保一些无需在单测阶段执行的函数不被执行。）
+        - context包：新增WithoutCancel、WithDeadlineCause、WithTimeoutCause和AfterFunc     
 
 ### Go 1.20
 + 2023 年 2月

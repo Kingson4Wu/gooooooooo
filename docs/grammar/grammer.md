@@ -114,3 +114,18 @@ Wait()：等待计数器清零
 + flag
 在 Golang 程序中有很多种方法来处理命令行参数。简单的情况下可以不使用任何库，直接处理 os.Args；其实 Golang 的标准库提供了 flag 包来处理命令行参数
 
++ golang中的字符串底层实现是通过byte数组的，中文字符在unicode下占2个字节，在utf-8编码下占3个字节，而golang默认编码正好是utf-8
+byte 等同于int8，常用来处理ascii字符
+rune 等同于int32,常用来处理unicode或utf-8字符
+
++ 空结构体应用场景
+https://mp.weixin.qq.com/s/Jy2wxqZYNMpQe7s1jtIR1g
+空结构体主要有以下几个特点：
+零内存占用
+地址相同
+无状态
+
+空结构体的使用场景
+1. 实现 Set 集合类型： 空结构体作为 value
+2. 用于通道信号
+3. 作为方法接收器

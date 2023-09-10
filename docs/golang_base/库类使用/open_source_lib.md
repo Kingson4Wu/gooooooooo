@@ -74,3 +74,6 @@ https://github.com/panjf2000/ants
 
 + go-streams : 用于 Go 的轻量级流处理库，提供了一种简单简洁的 DSL 来构建数据管道。
 
++ redis官网推荐的go版本的分布式锁：redsync
++ go get github.com/go-redsync/redsync/v4
+
