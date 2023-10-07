@@ -567,5 +567,320 @@ func main() {
 }
 使用Cond可以避免CPU空转的情况。!!!!!
 
+9.13 #73: Not using errgroup（使用 errgroup 采集多个协程执行结果）
+
+使用 golang.org/x/sync/errgroup 采集多个协程的错误, 但是 errorgroup限制比较多，需要函数签名符合func() error {}
+其中一个goroutine错误会通知其他的goroutine停止 ！！！
+ 
+k8s 中提供了集合多种错误的功能，可以参考 http://k8s.io/apimachinery/pkg
+
+9.14 #74: Copying a sync type（同步类型的值不能被拷贝）
+以下类型均不能被拷贝
+
+sync.Cond
+sync.Map
+sync.Mutex
+sync.RWMutex
+sync.Once
+sync.Pool
+sync.WaitGroup
+
+10.2 #76: time.After and memory leaks （使用 time.After 可能会导致内存溢出）
+每次调用 time.After 时使用大约200字节的内存。但是只有在指定的时间到达的时候才会GC，如果在1小时内，频繁的调用 time.After 会导致内存爆炸。！！！
+
+```go
+func consumer1(ch <-chan Event) {
+    for {
+        select {
+        case event := <-ch:
+            handle(event)
+        case <-time.After(time.Hour):
+            log.Println("warning: no messages received")
+        }
+    }
+}
+
+// 解决方案一
+func consumer2(ch <-chan Event) {
+    for {
+        ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+        select {
+        case event := <-ch:
+            cancel()
+            handle(event)
+        case <-ctx.Done():
+            log.Println("warning: no messages received")
+        }
+    }
+}
+
+// 解决方案二，创建一次 Timer 每次循环都会重置时间
+func consumer3(ch <-chan Event) {
+    timerDuration := 1 * time.Hour
+    timer := time.NewTimer(timerDuration)
+
+    for {
+        timer.Reset(timerDuration)
+        select {
+        case event := <-ch:
+            handle(event)
+        case <-timer.C:
+            log.Println("warning: no messages received")
+        }
+    }
+}
+```
+
+10.3 #77: Common JSON-handling mistakes（常见的 JSON 处理错误）
+Unexpected behavior due to type embedding
+如果类型实现了 Marshaler 接口，在调用 json.Marshal 的时候，会直接调用 MarshalJSON 方法。
+
+JSON and the monotonic clock
+可以使用 Time.Equal() 对比时间是否相关，这里判断相等不会包含单调时间
+使用 Time.Truncate() 函数排除单调时钟
+
+Map of any
+当把json解析到 map[string]any 类型，会出现数字类型解析错误的情况
+解决方案: 使用 json.Decoder 来代替 json.Unmarshal 方法
+```go
+decoder := json.NewDecoder(bytes.NewReader(getMessage()))
+decoder.UseNumber()
+var m map[string]any
+decoder.Decode(&personFromJSON)
+```
+
+
+10.4 #78: Common SQL mistakes（常见的 SQL 错误）
+
+Forgetting that sql.Open doesn’t necessarily establish connections to a database
+sql.Open 可能只是验证其参数而不创建与数据库的连接
+
+如果我们要确保使用 sql.Open 的函数也保证底层数据库可访问，我们应该使用Ping方法
+
+Forgetting about connections pooling
+sql.Open 返回一个sql.DB结构。这个结构不表示单个数据库连接，而是表示连接池。
+
+Not using prepared statements
+简单聊聊 SQL 中的 Prepared Statements
+​manjusaka.itscoder.com/posts/2020/01/05/simple-introdution-about-sql-prepared/
+使用 Prepare 方法创建 prepared statements ，提升查询性能，避免重复解析 SQL 带来的开销
+
+
+10.5 #79: Not closing transient resources（没有及时关闭临时资源）
+10.5.1 HTTP body
+
+需要注意的点：
+
+如果你没有读取Respose.Body的内容，那么默认的 http transport 会直接关闭连接
+如果你读取了Body的内容，下次连接可以直接复用
+在高并发的场景下，建议你使用长连接，可以调用 io.Copy(io.Discard, resp.Body) 读取Body的内容。
+!!!!
+
+10.5.2 sql.Rows
+标准库只有close才会将连接归还给连接池
+
+10.5.3 os.File
+写入操作是异步的，所以对写入的文件进行close操作，可能会遇到在buffer内的数据没有写到磁盘的错误，所以在close的时候如果遇到错误要及时上报。
+但是如果使用了Sync调用可以同步的把数据写入磁盘，所以调用Close方法的时候也可以不用在意错误，因为数据已经正常写入。
+
+
+11.1 #82: Not categorizing tests（没有对测试类型分类）
+不同类型的测试:单元测试、集成测试、E2E测试各自的执行时间和个数都有很大差距，如下的测试金字塔显示了测试的占比，各种测试的执行时间也呈反比。这一节介绍了一些方法提醒开发者，不同类型的测试，需要明确区分，并且最好独立执行，可以提升开发效率。
+
+使用 go:build tag来给测试归类,用法可参考：
+Separate Test Cases in Golang With Build Tags | Clivern
+https://clivern.com/separate-test-cases-in-golang-with-build-tags/
+
+```go
+//go:build integration
+// +build integration
+
+package db
+
+import (
+	"os"
+	"testing"
+)
+
+func TestInsert1(t *testing.T) {
+	// ...
+}
+ 
+//使用环境变量分类
+func TestInsert2(t *testing.T) {
+	if os.Getenv("INTEGRATION") != "true" {
+		t.Skip("skipping integration test")
+	}
+
+	// ...
+ 
+//Short mode，执行go test的时候加上 -short 选项，可以选择性的执行耗时短的测试
+func TestLongRunning(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping long-running test")
+	}
+	// ...
+}
+
+// % go test -short -v .
+// === RUN   TestLongRunning
+//     foo_test.go:9: skipping long-running test
+// --- SKIP: TestLongRunning (0.00s)
+// PASS
+// ok      foo  0.174s
+ 
+```
+
+11.2 #83: Not enabling the -race flag（没开启 -race flag来检验并发冲突）
+开启 -race 之后性能和内存占用都有影响，所以生产环境不建议开启（废话。。）
+
+go test -race ./...
+
+11.3 #84: Not using test execution modes（没有使用test执行模式：并行 or shuffle ）
+The parallel flag 开启并行模式执行测试
+// 并行执行测试，并行最大个数 16
+go test -parallel 16 .
+The -shuffle flag 开启 shuffle 模式执行测试
+go test -shuffle=on -v
+
+开启 shuffle模式可以检测出更多未知错误，但是因为每次执行都是乱序，如果想复现错误，并Debug，就需要在
+shuffle执行的时候，指定 shuffle id， 这样下次执行的时候就会按照特定的顺序执行
+
+
+11.4 #85: Not using table-driven tests（使用 table-driven 的模式编写测试）
+https://dave.cheney.net/2019/05/07/prefer-table-driven-tests
+
+1.5 #86: Sleeping in unit tests（在测试代码中包含sleep逻辑，导致出现flaky测试）
+依赖等待一段时间直到特定的逻辑执行完成的方式会因为时间设置问题导致出现不稳定的测试，这种情况，可以通过指定多次重试或者使用同步的方法来避免直接调用 time.sleep 来等待。
+
+可以使用 testify 或者 Gomega 中的 Eventually 方法
+
+Testing for asynchronous results without sleep in Go
+
+11.7 #88: Not using testing utility packages（没有使用内置的工具包，比如httptest、iotest）
+略，此处就不讲解包的使用了，知道在mock http 和 io 操作的时候可以使用这2个内置的工具包
+
+httptest package - net/http/httptest - Go Packages
+
+iotest package - testing/iotest - Go Packages
+
+11.8 #89: Writing inaccurate benchmarks（编写了不正确的BencMark）
+Not resetting or pausing the timer
+
+在具体测量某一段函数性能时，一些SetUp操作可能比较耗时会影响测量结果。调用 ResetTimer 函数可以重置一些Bench数据。
+
+每次迭代都会有一些耗时动作，可以调用 b.StopTimer() 和 b.StartTimer() 暂停和启动BenchMark计量
+
+
+Making wrong assumptions about micro-benchmarks
+在一些做一些 micro-benchmark 的时候，如果不多次进行基准测试很容易就得出错误的结论
+
+解决方案：对于 micro-benchmark 需要进行多次 BenchMark，可以利用 benchstat 统计BenchMark的结果进行均值计算。!!!
+
+go test -bench=. -count=10 | tee stats.txt
+利用 benchstat汇总结果：benchstat stats.txt
+
+Not being careful about compiler optimizations
+golang的内联优化会导致我们的测试函数被优化，执行结果不符合我们的预期（效果更好）
+
+https://github.com/golang/go/issues/14813
+
+How to write benchmarks in Go
+https://dave.cheney.net/2013/06/30/how-to-write-benchmarks-in-go
+
+给`go test`增加`-gcflags="-m"`参数，`-m`表示打印编译器做出的优化决定。可以看到是否做了内联优化，如果有 `inlining call to xxx 函数` 的字样就是做了优化
+
+执行go test的时候，增加-gcfloags="-l"参数，-l表示禁用编译器的内联优化。
+使用//go:noinline 编译器指令(compiler directive)，编译器在编译时会识别到这个指令，不做内联优化。
+ //go:noinline 
+func add(a int, b int) int {  return a + b }
+
+Being fooled by the observer effect
+在物理学中，观测者效应是观测行为对被观测系统的扰动。这种影响也可以在基准测试中看到，并可能导致对结果的错误假设。
+因为BenchMark事先创建了一个矩阵并重复计算，再加上缓存命中的影响更加加重了测试差距，解决方案就是每次迭代都创建新的矩阵
+
+11.9 #90: Not exploring all the Go testing features（没有利用 Go testing的特性）
+使用 coverprofile flag 查看代码覆盖率
+// 获得测试覆盖率文件
+go test -coverprofile=coverage.out ./...
+
+// 可视化展示覆盖率
+go tool cover -html=coverage.out
+
+
+12.1 #91: Not understanding CPU caches（利用缓存加速代码执行速度）
+关于CPU Cache部分不属于GO专属的知识，这里就不细讲了
+
+Sinaean Dean：细说Cache-L1/L2/L3/TLB
+763 赞同 · 62 评论文章
+
+cache line 是固定大小的连续内存段，通常为64字节（8个int64变量）。
+
+12.2 #92: Writing concurrent code that leads to false sharing（编写并发代码的时候，注意避免伪共享）
+
+
+12.3 #93: Not taking into account instruction-level parallelism（没有考虑到CPU指令并行优化）
+
+12.4 #94: Not being aware of data alignment（没有数据对齐的意识）
+Go struct 内存对齐 | Go 语言高性能编程 | 极客兔兔
+​geektutu.com/post/hpg-struct-alignment.html
+
+12.5 #95: Not understanding stack vs. heap（不理解堆栈和逃逸分析）
+
+```go
+// -gcflags "-m=2" 可以帮助查看是否有逃逸
+$ go build -gcflags "-m=2"
+...
+./main.go:12:2: z escapes to heap:
+```
+
+12.6 #96: Not knowing how to reduce allocations（减少内存分配）
+本书已经讲解了很多种优化内存的方式：
+
+39 使用strings.Builder拼接字符串
+40 避免不必要的string和[]byte类型转换
+21和#27给slice和map预先分配内存
+94 用更好的内存分配方式减少内存占用
+
+sync.Pool
+
+Go 语言从 1.3 版本开始提供了对象重用的机制，即 sync.Pool。sync.Pool 是可伸缩的，同时也是并发安全的，其大小仅受限于内存的大小。sync.Pool 用于存储那些被分配了但是没有被使用，而未来可能会使用的值。这样就可以不用再次经过内存分配，可直接复用已有对象，减轻 GC 的压力，从而提升系统的性能。
+
+sync.Pool 的大小是可伸缩的，高负载时会动态扩容，存放在池中的对象如果不活跃了会被自动清理。
+
+12.7 #97: Not relying on inlining（忘记依赖 inlining 编译优化）
+内联有两个主要好处。首先，它消除了函数调用的开销（即使自Go 1.17和基于寄存器的调用约定以来开销已经减轻）。其次，它允许编译器进行进一步的优化。例如，在内联函数后，编译器可以决定把一些逃逸的变量放在堆上。
+
+12.9 #99: Not understanding how the GC works（不理解GC是如何工作的）
+Go 语言垃圾收集器的实现原理
+​draveness.me/golang/docs/part3-runtime/ch07-memory/golang-garbage-collector/
+垃圾回收的优化问题
+​golang.design/go-questions/memgc/optimize/
+比较重要的问题是，每次GC是何时发生？与Java等其他语言相比，Go 配置仍然相当简单。它依赖于一个环境变量：GOGC。该变量定义自上次GC触发另一个GC之前的堆增长百分比：默认值为100%。
+
+假设一次GC刚刚被触发，当前堆大小为128 MB。如果 GOGC=100，则当堆大小达到256 MB时触发下一次GC。
+
+默认情况下，每次堆大小翻倍时都会执行GC。此外，如果在过去2分钟内没有执行GC，Go将强制运行一次。
+
+在大多数操作系统上，分配这个 min 变量不会使我们的应用程序消耗1 GB内存。调用make会导致系统调用mmap()，而mmap调用会懒分配内存。
+
+12.10 #100: Not understanding the impacts of running Go in Docker and Kubernetes（GO应用在k8s环境下运行会遇到错误分配GOMAXPROCS的场景）
+如果k8s运行的环境不是安全容器，进程读到的全局CPU核数和宿主机一致，会导致错误配置了GOMAXPROCS的值和宿主机一样，GO默认开启的协程个数就会远超容器实际运行环境提供的CPU个数，导致协程频繁的调度切换程序运行时间被拖慢。
+
+解决方案：使用 automaxprocs 包来配置GOMAXPROCS
+
+https://github.com/uber-go/automaxprocs
+​github.com/uber-go/automaxprocs
+但是现在大部分生产环境的容器运行时都是安全容器，隔离性更强不会出现错误配置GOMAXPROCS的情况
+
+
+
+
+
+
+
+
+
+
 
 
