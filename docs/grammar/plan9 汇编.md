@@ -1,1 +1,0 @@
-+ 深入Go的底层，带你走近一群有追求的人:<https://mp.weixin.qq.com/s/obnnVkO2EiFnuXk_AIDHWw>
