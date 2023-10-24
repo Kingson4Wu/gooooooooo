@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/stretchr/testify v1.8.1
-	golang.org/x/crypto v0.5.0
+	golang.org/x/crypto v0.14.0
 	gorm.io/driver/mysql v1.4.5
 	gorm.io/gorm v1.24.3
 )
@@ -33,7 +33,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/yuin/gopher-lua v0.0.0-20220504180219-658193537a64 // indirect
-	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
