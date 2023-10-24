@@ -1971,3 +1971,169 @@ High Performance Go Workshop - Dave Cheney
 atomic 的原理与使用场景
 极客兔兔.Go 语言高性能编程
 深度解密Go 语言之sync.Pool - Stefno - 博客园
+
+----
+
+
+Golang高性能编程实践: https://mp.weixin.qq.com/s/VMzhyySny60zABnxlzlVjQ
+
+## 度量和分析工具
+1. Benchmark
+2. profile
+3. trace
+
+## 常用类型和结构
+### 1. 少用interface、reflect，会逃逸到堆上
+
+目前一些常用的基于 interface(可能会导致逃逸)的函数:！！！
+函数	功能
+fmt 系列，包括:fmt.Sprinf、fmt.Sprint 等	数据转换、格式处理
+binary.Read/binary.Write	二级制数据读写
+json.Marshal/json.Unmarshal	json 的序列化、反序列化
+
+#### 类型转换: 强转 vs 断言 vs reflect
+目前 go 中数据类型转换，存在以下几种方式：
+
+1. 强转，如 int 转 int64，可用 int64(intData)。强转是对底层数据进行语意上的重新解释
+2. 断言(interface)，根据已有信息，对变量类型进行断言，如 interfaceData.(int64)，会利用 eface.type 中相关信息，对类型进行校验、转换。
+3. reflect 相关函数，如 reflect.Valueof(intData).Int()，其中 intData 可以为各种 int 相关类型，具有较大的灵活性。
+
+reflect性能最差
+BenchmarkConvertForce-12            1000000000           0.2843 ns/op          0 B/op          0 allocs/op
+BenchmarkConvertReflect-12          84957760            13.66 ns/op        0 B/op          0 allocs/op
+BenchmarkConvertAssert-12           1000000000           0.2586 ns/op          0 B/op
+
+### 2. 常用 map
+go 中常用的 map 包含，runtime.map、sync.map 和第三方的 ConcurrentMap
+
+sync.map 定义位于map.go中，其是典型的以空间换时间的处理
+Sync.map 相关机制参见:https://juejin.cn/post/6844903895227957262
+go 中还有一个第三方的 ConcurrentMap，其采用分段锁的原理，通过降低锁的粒度提升性能
+
+BenchmarkStdMapGetSet-12               49065         24976 ns/op           0 B/op          0 allocs/op
+BenchmarkSyncMapGetSet-12             722704          1756 ns/op          16 B/op          1 allocs/op
+BenchmarkConcurrentMapGetSet-12       227001          5206 ns/op           0 B/op          0 allocs/op
+
+需要注意此测试，读写并发比 20:1 读多写少，建议使用 sync.Map。如果业务场景中，很明确只有对 map 的读操作，建议使用 runtime.Map
+
+### 3 hash 的实现: index vs map
+
+### 4 string 和 slice
+
+#### String、[]byte 转换
+go 中 string 和[]byte 间相互转换包含 2 种：
+1 采用原生机制，比如 string 转 slice 可采用，[]byte(strData)
+2 基于对底层数据结构重新解释
+
+// 认为对底层数据进行重新解释
+func Bytes2String(b []byte) string {
+   x := (*[3]uintptr)(unsafe.Pointer(&amp;b))
+   s := [2]uintptr{x[0], x[1]}
+   return *(*string)(unsafe.Pointer(&amp;s))
+}
+
+#### string 的拼接
+当前 golang 中字符串拼接方式，主要包含：
+使用+连接字符串
+使用 fmt.Sprintf
+使用运行时工具类，strings.Builder 或者 bytes.Buffer
+预分配机制
+
+#### 循环的处理： for vs range
+go 中常用的循环有 2 种 for 和 range,如下：
+
+按位置进行遍历，for 和 range 都支持，如 for i:=range a{}， for i:=0;i<len(a);i++
+同时对位置、值进行遍历，range 支持，如 for i,v := range a {}
+
+对于所需空间较小，如指针类型数组等此问题并不严重 在需要较大存储空间、元素需要较大存储空间时，建议不要采用 range value 的方式
+
+#### 重载
+目前 go 中重载的实现包含 2 种，泛型(1.18)、基于 interface 的定义。泛型的优点在于预编译，即编译期间即可确定类型，对比基于 interface 的逃逸会有一定收益
+
+对比 interface 类型的处理，泛型有一定的性能的提升
+
+## 空间与布局
+### 1 栈与堆空间的分配
+
+能在栈上处理的数据，不会放到堆上
+
+### 2 Zero GC
+Zero GC 能够避免 gc 带来的扫描、STW 等，具有一定的性能收益。
+
+当前 zero gc 的处理，主要包含 2 种：
+
+1 无 gc，通过 mmap 或者 cgo.malloc 分配空间，绕过 go 的内存分配机制，如 fastcache 的实现
+2 避免或者减少 gc，通过[]byte 等避免因为指针导致的扫描、stw，bigCache 的实现即为此。
+
+Zero GC 的优点在于，避免了 go gc 处理带来的标记扫描、STW 等，相对于常规堆上数据分配，其性能有较大提升。
+
+使用了大量的基于 0 gc 的库，比如 fastcache，对一些常用函数、机制，如 strings.split 也进行了 0 gc 的优化
+
+### GC 的优化
+gc 优化相关，主要涉及 GOGC、GOMEMLIMIT
+需要注意，此机制只在 1.20 以上版本生效
+
+### 逃逸
+对于一些处理比较复杂操作，go 在编译器会在编译期间将相关变量逃逸至堆上。目前可能导致逃逸的机制包含:
+
+基于指针的逃逸
+1 栈空间不足，超过了 os 的限制 8M
+2 闭包
+3 动态类型
+4 目前逃逸分析，可采用-gcflags=-m 进行查看
+
+### 5 数据的对齐
+go 中同样存在数据对齐，适当的布局调整，能够节省大量的空间
+
+### 6 空间预分配
+空间预分配，可以避免大量不必要的空间分配、拷贝，目前 slice、map、strings.Builder、byte.Builder 等都涉及到预分配机制。
+
+## 并发编程
+在读写比例为 9:1 时，RWMute 性能约为 Mutex 的 6 倍。
+
+
+---
+
+## 高性能 Go 的 6 个技巧
+1. 基准测试
+2. 性能分析
+最常用的性能分析工具是CPU分析器，可以通过在go test命令中添加-cpuprofile标志来启用
+go test -cpuprofile=prof.out
+go tool pprof prof.out
+(pprof) top
+3. 编译优化
+内联优化 （减少函数调用开销）
+逃逸分析 （堆分配比栈分配更昂贵，所以减少堆分配可以提高性能）
+死代码消除 （永远不会被执行的代码，在编译器进行死代码消除时会被删除）
+4. 理解执行跟踪器
+```go
+func main() {
+    f, err := os.Create("trace.out")
+    if err != nil {
+        panic(err)
+    }
+    defer f.Close()
+
+    err = trace.Start(f)
+    if err != nil {
+        panic(err)
+    }
+    defer trace.Stop()
+
+    fmt.Println("Hello, World!")
+}
+```
+5. 内存管理和垃圾回收调优
+```go
+// Set the maximum number of CPUs to use
+    runtime.GOMAXPROCS(2)
+
+    // Set the minimum heap size to 1GB
+    runtime.MemProfileRate = 1 << 30
+
+    // Set the garbage collection percentage to 50%
+    debug.SetGCPercent(50)
+```
+6. 并发
+通过goroutines和channels提供了内置的并发支持
+
