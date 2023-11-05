@@ -77,3 +77,20 @@ https://github.com/panjf2000/ants
 + redis官网推荐的go版本的分布式锁：redsync
 + go get github.com/go-redsync/redsync/v4
 
++ 日期管理
+8、Carbon：这是一个轻量级的、易于使用的、语义智能的日期时间库，适用于Go开发者。
+地址：https://github.com/golang-module/carbon
+
++ web爬虫
+12、Colly：这是一个很棒的Go网页爬虫框架，特别适合存档(我经常用它)和数据挖掘。
+地址：https://github.com/gocolly/colly
+
++ 13、Retry
+用于重试逻辑和回退。它是高度可扩展的，可以完全控制重试发生的方式和时间。还可以通过实现backoff接口编写自己的自定义后退函数。
+地址：https://github.com/sethvargo/go-retry
+
++ 14、endless
+golang HTTP和HTTPS服务器的零停机重启。
+地址：https://github.com/fvbock/endless
+
+

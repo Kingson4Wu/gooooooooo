@@ -51,6 +51,10 @@ https://stackoverflow.com/questions/53837919/should-go-sum-file-be-checked-in-to
 版本发布
 对模块进行发版时，只需打上 [模块名]/版本号 即可 以我们的示例为例，对模块 a 进行发版时我们只需要打上 tag a/v1.0.0 ，同理对模块 b 进行发版时，需要打上 tag b/v1.0.0 即可
 
+---
+
+小厂内部私有Go module拉取方案3:<https://mp.weixin.qq.com/s/WDw-Y8Rp4VxAa2iPKRnKKg>
+
 
 
 
