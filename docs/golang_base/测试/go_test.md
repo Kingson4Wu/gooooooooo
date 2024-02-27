@@ -25,3 +25,8 @@ fake object与stub的优缺点基本一样。多数情况下，大家也无需�
 和fake/stub一样，mock object也是一个测试替身。通过上面的例子我们看到fake建立困难(比如创建一个近2千行代码的fakeDriver)，但使用简单。而mock object则是一种建立简单，使用简单程度因被测目标与外部协作者交互复杂程度而异的test double
 
 
+----
+
+依赖Kafka的Go单元测试例解 : <https://mp.weixin.qq.com/s/M_lV7FaIMxZGd6pZ9dDaAw>
+    - testcontainers-go是一个Go语言开源项目，专门用于简化创建和清理基于容器的依赖项，常用于Go项目的单元测试、自动化集成或冒烟测试中。
+    

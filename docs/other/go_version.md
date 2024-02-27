@@ -1,3 +1,19 @@
++ brew upgrade go
+
+### Go 1.22
++ 2024 年 2月
++ https://segmentfault.com/a/1190000044628192
++ 语言变化 
+    - 长期存在的 "for "循环在迭代之间意外共享循环变量的问题现已得到解决
+    - 支持整数范围 `for i := range 10 {}`
++ 性能提高
+    - 虚拟化、PGO
++ 标准库变动
+    - math/rand/v2 更高、速度更快的伪随机生成算法
+    - net/http.ServeMux 使用的模式现在可接受方法和通配符
+    - 在 slices 包中添加了 Concat 函数   
+
+
 ### Go 1.21
 + 2023 年 8月
 + Go 1.21新特性前瞻：https://mp.weixin.qq.com/s/PwSJQM7WmJeLnDDbCr78hg

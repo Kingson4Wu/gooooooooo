@@ -11,3 +11,11 @@ type Policy interface {
     Resolve([]gorm.ConnPool) gorm.ConnPool
 }
 
+
++ gorm.Clause()子句分析之ON DUPLICATE KEY UPDATE 
+
+result := tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "xxx_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"xx", "give_num", "xxxx", "xxx", "xxxx", "remark", "update_time"}),
+	}).Create(&rule)
+

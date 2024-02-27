@@ -1,0 +1,164 @@
+https://mp.weixin.qq.com/s/yJqwcYqYmV1wWuo147fX4Q
+https://research.swtch.com/testing
+
+<pre>
+Here are the 20 tips from the talk:
+
+Make it easy to add new test cases.
+Use test coverage to find untested code.
+Coverage is no substitute for thought.
+Write exhaustive tests.
+Separate test cases from test logic.
+Look for special cases.
+If you didn’t add a test, you didn’t fix the bug.
+Not everything fits in a table.
+Test cases can be in testdata files.
+Compare against other implementations.
+Make test failures readable.
+If the answer can change, write code to update them.
+Use txtar for multi-file test cases.
+Annotate existing formats to create testing mini-languages.
+Write parsers and printers to simplify tests.
+Code quality is limited by test quality.
+Scripts make good tests.
+Try rsc.io/script for your own script-based test cases.
+Improve your tests over time.
+Aim for continuous deployment.
+
+</pre>
+
+一般来说，使测试代码优秀的因素与使非测试代码优秀的因素是相同的：勤奋(hard work)、专注(attention)和时间(time)。
+
+建议1：让添加新测试用例变得容易
+A Table-Driven Test
+我们鼓励使用表驱动测试，因为它们非常容易添加新的测试用例
+我们根本不需要编写任何新的代码，只需要添加一行新的数据
+
+建议2：使用测试覆盖率来发现未经测试的代码
+你可以运行“go test -coverprofile”来生成一个覆盖率文件，然后使用“go tool cover”在浏览器中查看它。
+
+建议3：覆盖率不能替代思考
+即使代码拥有100%的测试覆盖率，仍然可能存在bug
+这个提示也适用于覆盖率驱动的模糊测试(fuzzing test)
+模糊测试只是尝试通过代码探索越来越多的路径，以增加覆盖率。模糊测试也非常有帮助，但模糊测试也不能替代思考。
+
+建议4：编写全面的测试
+如果你能够测试函数的每一个可能输入，那就应该这样做。但现实中可能无法做到，但通常你可以在一定约束条件下测试特定数量以内的所有输入。
+
+建议5：将测试用例与测试逻辑分开
+在表驱动测试中，测试用例在表中，而处理这些测试用例的循环则是测试逻辑。
+将它们分开可以让你在多个上下文中使用相同的测试用例。
+
+建议6：寻找特殊情况
+即使我们对所有小规模情况进行了全面测试，仍然可能存在潜在的bug
+
+bug是这样的，如果切片中的元素数量非常接近int的最大值，那么i+j会溢出，因此i+j/2就不是切片中间位置的正确计算方法了。这个bug于2006年在一个使用64位内存和32位整数的C程序中被发现，这个程序用于索引包含超过10亿个元素的数组。在Go语言中，这种特定组合基本上不会发生，因为我们要求使用64位内存时，也要使用64位整数，这正是为了避免这种bug。但是，由于我们了解到这个bug，而且你永远不知道你或其他人将来如何修改代码，所以避免这个bug是值得的。
+
+建议7：如果你没有添加测试，那就没有修复bug
+
+这句话在两个不同的方面下都是正确的。
+
+第一个是编程方面。如果你没有进行测试，bug可能根本没有被修复。这听起来可能很愚蠢，但你有多少次遇到过这种情况？有人告诉你有一个bug，你立即知道修复方法。你进行了更改，并告诉他们问题已经修复。然后他们却回来告诉你，不，问题还存在。编写测试可以避免这种尴尬。你可以说，很抱歉我没有修复你的bug，但我确实修复了一个bug，并会再次查看这个问题。
+
+第二个是软件工程方面，即“时间和其他程序员”的方面。bug并不是随机出现的。在任何给定的程序中，某些错误比其他错误更有可能发生。因此，如果你犯了一次这个错误，你或其他人很可能在将来再次犯同样的错误。如果没有测试来阻止它们，bug就会重新出现。
+
+func Find[Elem, Target any] \
+(x L]Elem, t Target, cmp func(Value, Target) int) I
+(index int, found bool) {
+n := len(x)
+1, j:= 0, n for i ‹ j {
+//m := (i + j) / 2
+m := intuint(i+j) / 2)
+// m := i + (j-i)/2
+if cmp(x[m], t) < 0 {
+i = m + 1
+} else {
+i = m
+}
+}
+return i, i < n 88 cmp(x[i], t) == 0
+}
+
+现在，这个特定的测试很难编写，因为输入范围非常大，但即使测试很难编写，这个建议仍然成立。实际上，在这种情况下，这个建议通常更为正确。
+
+为了测试这种情况，一种可能性是编写一个仅在32位系统上运行的测试，对两千兆字节的uint8进行二分查找。但这需要大量的内存，并且我们现在已经没有多少32位系统了。对于测试这种难以找到的bug，通常还有更巧妙的解决方案。我们可以创建一个空结构体的切片，无论它有多长，都不会占用内存。这个测试在一个包含MaxInt个空结构体的切片上调用Find函数，寻找一个空结构体作为目标，但是它传入了一个总是返回-1的比较函数，声称切片元素小于目标。这将使二分查找探索越来越大的切片索引，从而导致溢出问题。如果我们撤销我们的修复并运行这个测试，那么测试肯定会失败。
+
+func TestBig(t *testing.T) {
+x, ok := Find(
+make (LIstruct}, math. MaxInt),
+func(elem, target struct{3) int & return -1 },
+)
+if x != math. MaxInt || ok != false {
+t.Errorf("Find(big) = %, %, want %v, %v", x, ok, math. MaxInt, false)
+}
+}
+
+建议8：并非所有东西都适合放在表中
+这个特殊情况不适合放在表中，但这没关系。但是很多东西确实适合放在表中。
+
+表格是将测试用例与测试逻辑分离并且方便添加新的测试用例的一种方法，但有时你会有很多测试，甚至写Go语法的开销也是不必要的。
+
+因此，我将快速介绍一下解析器，以展示它并不复杂。我们读取文件，然后将其分割成行。对于每一行，我们计算错误消息的行号。切片元素0表示第1行。我们去掉行尾的任何注释。如果行为空白行，我们跳过它。到目前为止，这是相当标准的样板代码。现在是重点。我们将行分割为字段，并提取出四个字段。
+我们只是解析文件，而不是遍历表格。
+
+建议9：测试用例可以放在testdata文件中
+测试不必都要放在源代码中。
+
+建议10：与其他实现进行比较
+与AT&T正则表达式的测试用例进行比较有助于确保Go的包以完全相同的方式处理各种边缘情况。我们还将Go的包与C++的RE2库进行比较。为了避免需要编译C++代码，我们以记录所有测试用例的方式运行它，并将该文件作为testdata提交到Go中。
+
+在文件中存储测试用例的另一种方法是使用成对的文件，一个用于输入，一个用于输出。
+
+func TestConverter(t *testing.T) {
+files, err := filepath. Glob("testdata/*.test")
+if err != nil {
+t.Fatal(err)
+}
+if len(files) == 0 {
+t.Fatalf("no testdata/*.test files")
+}
+for -, file := range files {
+name := strings. TrimSuffix(filepath. Base(file), " test")
+t. Run(name, func(t *testing.T) {
+data, err : = os. ReadFile(file)
+if err != nil {
+t.Fatal(err)
+% go test -run=Converter/issue23036
+
+我们首先使用filepath.Glob查找所有的testdata。如果失败或找不到任何文件，我们会报错。否则，我们循环遍历所有文件。对于每个文件，我们通过获取基本文件名（不包括testdata/目录名和文件后缀）来创建子测试名称。然后我们用该名称运行一个子测试。如果你的测试用例足够复杂，每个文件一个子测试通常是有意义的。这样，当一个测试用例失败时，你可以使用go test -run只运行特定的文件。
+
+
+建议11：使测试失败易读
+输出每个失败的完整细节
+
+建议12：如果答案可能会改变，编写代码来更新它们
+通常的做法是在测试中添加一个“-update”标志。
+测试定义了一个新的“-update标志”。当标志为true时，测试将计算的答案写入答案文件
+在谈论测试文件的主题上，有时将一个测试用例分割成多个文件会很烦人。
+
+建议13： 使用txtar进行多文件测试用例
+TMD看了很久没看懂
+
+建议14：对现有格式进行注解(annotation)来创建测试迷你语言
+对现有格式进行注释，比如在txtar中添加 $ 和尖号D，是一个强大的工具。
+TMD没看懂+2
+
+建议15：编写解析器和打印器来简化测试
+这些解析器和打印器不一定是用于testdata中数据文件的独立脚本。你也可以在常规的Go代码中使用它们。
+
+建议16：代码质量受测试质量限制
+如果你不能编写高质量的测试，你将无法编写足够的测试，并且最终无法得到高质量的代码。
+
+建议17：使用脚本可以编写很好的测试
+这些脚本使添加新的测试用例变得非常容易。
+
+建议18：尝试使用rsc.io/script来创建基于脚本的测试用例
+
+建议19：随着时间的推移改进你的测试
+
+建议20：追求持续部署
+
+
+
+
+
