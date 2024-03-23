@@ -1,4 +1,6 @@
++ export ALL_PROXY=socks5://127.0.0.1:7890 (Mixed Port = http + socks)
 + brew upgrade go
+
 
 ### Go 1.22
 + 2024 年 2月
